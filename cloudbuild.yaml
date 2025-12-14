@@ -1,0 +1,105 @@
+# Google Cloud Build configuration for Cure-and-Care-Dispatch
+# Builds and deploys all services to Cloud Run
+
+substitutions:
+  _VERSION: 'latest'
+
+steps:
+  # Build API image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/cure-care-api:${_VERSION}'
+      - '-f'
+      - 'docker/api.Dockerfile'
+      - '.'
+    id: 'build-api'
+
+  # Build Web image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/cure-care-web:${_VERSION}'
+      - '-f'
+      - 'docker/web.Dockerfile'
+      - '.'
+    id: 'build-web'
+
+  # Build Assistant image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/cure-care-assistant:${_VERSION}'
+      - '-f'
+      - 'docker/assistant.Dockerfile'
+      - '.'
+    id: 'build-assistant'
+
+  # Push images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/cure-care-api:${_VERSION}']
+    waitFor: ['build-api']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/cure-care-web:${_VERSION}']
+    waitFor: ['build-web']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/cure-care-assistant:${_VERSION}']
+    waitFor: ['build-assistant']
+
+  # Deploy API to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cure-care-api'
+      - '--image=gcr.io/$PROJECT_ID/cure-care-api:${_VERSION}'
+      - '--region=asia-south1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=PORT=8080,NODE_ENV=production'
+      - '--set-secrets=DATABASE_URL=DATABASE_URL:latest,JWT_SECRET=JWT_SECRET:latest'
+    id: 'deploy-api'
+
+  # Deploy Web to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cure-care-web'
+      - '--image=gcr.io/$PROJECT_ID/cure-care-web:${_VERSION}'
+      - '--region=asia-south1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=PORT=8080,NODE_ENV=production'
+    id: 'deploy-web'
+    waitFor: ['deploy-api']
+
+  # Deploy Assistant to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cure-care-assistant'
+      - '--image=gcr.io/$PROJECT_ID/cure-care-assistant:${_VERSION}'
+      - '--region=asia-south1'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=PORT=8080,WHATSAPP_PROVIDER=stub'
+    id: 'deploy-assistant'
+
+images:
+  - 'gcr.io/$PROJECT_ID/cure-care-api:${_VERSION}'
+  - 'gcr.io/$PROJECT_ID/cure-care-web:${_VERSION}'
+  - 'gcr.io/$PROJECT_ID/cure-care-assistant:${_VERSION}'
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
