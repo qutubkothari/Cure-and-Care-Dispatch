@@ -18,7 +18,7 @@ if (-not (Test-Path $ConfigPath)) {
 
 $config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
 
-$host = $config.host
+$ec2Host = $config.host
 $user = $config.user
 $keyPath = $config.sshKeyPath
 $appDir = $config.appDir
@@ -29,7 +29,7 @@ $webOrigin = $config.webOrigin
 $swapGb = $config.swapSizeGb
 $clearCaches = if ($config.clearCaches) { 'true' } else { 'false' }
 
-if (-not $host) { throw "deploy.ec2.json: host is required" }
+if (-not $ec2Host) { throw "deploy.ec2.json: host is required" }
 if (-not $user) { throw "deploy.ec2.json: user is required" }
 if (-not $keyPath) { throw "deploy.ec2.json: sshKeyPath is required" }
 if (-not (Test-Path $keyPath)) { throw "SSH key file not found: $keyPath" }
@@ -46,10 +46,10 @@ if (-not $jwtSecret -or $jwtSecret -eq 'CHANGE_ME_TO_A_LONG_RANDOM_SECRET' -or $
 }
 
 if (-not $webOrigin) {
-  $webOrigin = "http://$host:3000"
+  $webOrigin = "http://$ec2Host:3000"
 }
 
-Write-Host "Deploying to $user@$host ($appDir)" -ForegroundColor Cyan
+Write-Host "Deploying to $user@$ec2Host ($appDir)" -ForegroundColor Cyan
 
 $remoteEnv = @(
   "APP_DIR='$appDir'",
@@ -68,7 +68,7 @@ if (-not (Test-Path $scriptPath)) { throw "Missing script: $scriptPath" }
 $sshArgs = @(
   '-o', 'StrictHostKeyChecking=accept-new',
   '-i', $keyPath,
-  "$user@$host",
+  "$user@$ec2Host",
   "$remoteEnv bash -s"
 )
 
