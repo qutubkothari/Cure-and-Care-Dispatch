@@ -1,0 +1,40 @@
+DISPATCH RECORDING SYSTEM – ONE PAGE OVERVIEW
+Current Pain Points
+* Delivery tracking is paper-based; invoices get lost or damaged.
+* No reliable proof of delivery (GPS + timestamp) leading to disputes.
+* Petrol/petty-cash claims lack GPS/time evidence, increasing fraud risk.
+* Admin spends hours reconciling delivery sheets and approvals.
+* No real-time visibility of what each driver delivered.
+Proposed Solution: Web Application + Mobile PWA
+* Lightweight system accessible on any phone (Android/iPhone).
+* Drivers install it via 'Add to Home Screen' — no Play Store required.
+Driver App (PWA)
+* Daily assigned invoices visible in-app.
+* One-tap ‘Delivered’ captures GPS + timestamp automatically.
+* Optional customer signature/photo proof.
+* Petrol claims via in-app photo/video with automatic geotag & time-stamp.
+* Offline-first design — syncs automatically when network returns.
+Admin Web Dashboard
+* Live delivery map with timestamps and driver status.
+* Petty-cash approval module with attached evidence.
+* Excel export for accounting.
+* Complete audit trail of all driver actions.
+Key Benefits
+* Zero paperwork, fully digital workflow.
+* Fraud-resistant petty-cash submissions.
+* Faster reconciliation — hours reduced to minutes.
+* Reliable & verifiable proof of delivery.
+* Simple UI suitable for non-technical drivers.
+Why PWA?
+* Works on any smartphone without app-store installation.
+* Offline mode ensures uninterrupted usage.
+* Cheaper and faster to maintain compared to native apps.
+
+
+Implementation Timeline
+* Week 1–2: UI + Backend setup
+* Week 3–4: Driver PWA (deliveries + GPS + petty cash)
+* Week 5–6: Admin Dashboard + reports
+* Week 7–8: Pilot with real drivers + refinements
+
+RESULT: A practical, field-ready dispatch recording system that provides full transparency, reduces fraud, and simplifies the entire delivery workflow.

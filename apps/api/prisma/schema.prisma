@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  DISPATCHER
+  AGENT
+  ACCOUNTANT
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?  @unique
+  role      UserRole
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DispatchJob {
+  id            String   @id @default(cuid())
+  invoiceNo     String
+  customerName  String
+  customerPhone String?
+  address       String
+  notes         String?
+  scheduledDate DateTime
+  status        String
+  assignedAgent String?
+  sequence      Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([assignedAgent, scheduledDate])
+}
+
+model DeliveryEvent {
+  id          String   @id @default(cuid())
+  jobId       String
+  eventType   String
+  occurredAt  DateTime
+  lat         Float?
+  lng         Float?
+  accuracyM   Float?
+  provider    String?
+  mediaRefs   Json?
+  otpUsed     Boolean  @default(false)
+  agentNotes  String?
+  createdAt   DateTime @default(now())
+
+  @@index([jobId, occurredAt])
+}

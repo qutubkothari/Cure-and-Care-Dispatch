@@ -1,0 +1,172 @@
+Software Requirements Specification — Dispatch App
+Short, brutal assessment up front: if you expect this to be “simple” and rely on drivers always having internet or honest petty-cash reporting, you’re setting yourself up for chaos. Design for offline use, GPS fiddling, and human shortcuts. Now the real SRS.
+
+1. Purpose
+Provide a reliable, auditable mobile + web system to record and manage daily dispatches performed by delivery personnel: collect customer invoices at the office, follow delivery routes, mark deliveries done with timestamp + GPS, capture proof, record petty-cash disbursements and fuel reimbursements, and produce easy operational reports for supervisors.
+
+2. Scope
+* Mobile app for delivery personnel (Android first; iOS optional later).
+* Web dashboard for dispatch managers and admins (view, assign, audit, reports).
+* Core features: job assignment, real-time and offline capture of delivery completion (timestamp + GPS + photo/OTP/signature), petty cash issuance & reconciliation, route playback, audit logs, exportable reports (PDF, CSV).
+* Integrations: optional fleet GPS API, SMS/WhatsApp for notifications, cloud storage for media, corporate SSO (optional).
+* Security, tamper detection, and compliance (data retention, privacy).
+
+3. Stakeholders
+* Operations Manager / Dispatch Supervisor — assign jobs, review deliveries, run reports.
+* Delivery Person — receives jobs, records deliveries, requests petty cash, views history.
+* Accountant — reconciles petty-cash and fuel reimbursements.
+* Admin / IT — user management, system config.
+* Customers — receive SMS/WhatsApp delivery confirmations (optional).
+
+4. User Roles & Permissions
+* Admin: full system configuration, user create/delete, access to all data.
+* Supervisor: create/assign dispatch lists, view reports, approve petty reimbursements.
+* Dispatcher: day-to-day job assignment (may be same as Supervisor).
+* Delivery Agent: view assigned jobs, mark deliveries, request/receive petty cash.
+* Accountant: view petty cash logs and generate financial reports.
+Permissions must be role-based (RBAC) and enforceable at API and UI layers.
+
+5. Functional Requirements (MUST / MVP)
+5.1 Job Management
+* FR1: Create daily dispatch list (bulk import via CSV / manual).
+* FR2: Assign delivery items to agents with sequence/order.
+* FR3: Edit/cancel assignments and reassign in real-time.
+5.2 Mobile Delivery Flow (Agent)
+* FR4: Agent sees today's assigned list with customer details, invoice number, contact, address, and special notes.
+* FR5: Agent triggers Start Delivery per job ? app records start_timestamp and start_GPS.
+* FR6: Agent marks Delivered ? app captures delivered_timestamp, delivered_GPS, one or more proofs (photo(s), optional signature, optional OTP confirmed by customer, optional scanned invoice barcode).
+* FR7: Agent can mark Attempted/Failed with reason codes and attach photo.
+* FR8: Offline support: queue actions locally and auto-sync when online. Show sync status per job.
+5.3 GPS & Tamper Controls
+* FR9: Capture high-accuracy GPS (WGS84), device timestamp, and provider (GPS/WiFi/Phone).
+* FR10: Record device sensor metadata (GPS accuracy radius, number of satellites, provider timestamp) for tamper detection.
+* FR11: Optionally require selfie-with-customer or OTP to reduce spoofing.
+5.4 Petty Cash & Fuel Reimbursement
+* FR12: Supervisor records cash issued to agent per day (amount, reason, timestamp).
+* FR13: Agent can log expenditure with receipt photo; workflow for supervisor/accountant approval.
+* FR14: Reconciliation report showing issued vs submitted receipts and outstanding balances.
+5.5 Audit & Evidence
+* FR15: Immutable audit trail for every state change (who did what, when, where).
+* FR16: Store original media files securely; do not allow deletion except by admin with justification log.
+5.6 Notifications
+* FR17: Optional notifications: SMS/WhatsApp/email on delivery complete, failed attempt, or high-priority exceptions.
+5.7 Reports & Exports
+* FR18: Pre-built reports: daily dispatch summary, agent performance, GPS route maps, petty cash reconciliation.
+* FR19: Export as CSV and PDF; schedule automated reports via email.
+5.8 Search & Filters
+* FR20: Search by invoice, customer name, agent, date, status; filters for failed deliveries, pending petty cash, etc.
+5.9 Administration
+* FR21: User management, role assignment, device management (blacklist stolen devices), config delivery reasons, OTP rules.
+* FR22: Settings for GPS tolerance, offline sync rules, retention policy.
+
+6. Non-Functional Requirements
+6.1 Reliability & Availability
+* System should be highly available for web/notifications; mobile should be resilient to intermittent connectivity.
+6.2 Performance
+* Dashboard queries for last 7 days should return within 2s for datasets up to 50k records (indexing required).
+6.3 Security
+* Authentication: JWT with refresh tokens; support SSO (SAML/OAuth2) later.
+* Transport: TLS 1.2+ for all network traffic.
+* Data at rest: encrypt sensitive fields (personal data, GPS) and media using server-side encryption.
+* Key storage: use cloud KMS.
+* Role-based access enforcement server-side.
+* Rate limiting & brute-force protection.
+* Audit logs immutable (write-once) and exportable.
+6.4 Tamper Detection & Integrity
+* Record GPS metadata and device-signed timestamps where possible.
+* Flag suspicious deliveries: GPS outside radius, poor GPS accuracy, photo missing, repeated identical GPS for many deliveries.
+* Provide manual override only with supervisor justification logged.
+6.5 Privacy & Compliance
+* GDPR-like considerations: data minimization, retention policy, ability to delete PII per policy.
+* Only store customer contact for minimal time required.
+6.6 Scalability
+* Design backend services stateless where possible; use DB indexes, partitioning for large datasets, object storage for media.
+6.7 Maintainability
+* Modular API (REST or GraphQL), clear documentation, versioned API.
+
+7. Data Model (Core entities)
+* User (user_id, name, role, phone, email, device_id, active)
+* AgentDevice (device_id, user_id, last_seen, os, app_version)
+* Customer (customer_id, name, address, phone, geo_point)
+* Invoice/Order (order_id, invoice_no, customer_id, items, amount)
+* DispatchJob (job_id, order_id, assigned_agent_id, sequence, scheduled_date, status)
+* DeliveryEvent (event_id, job_id, event_type:start/delivered/failed, timestamp, gps_lat, gps_lng, gps_accuracy, provider, media_refs, otp_used, agent_notes)
+* PettyCashTxn (txn_id, agent_id, amount, type(issue/expense), receipt_media, status)
+* AuditLog (log_id, entity, action, actor_id, timestamp, details_hash)
+* MediaStore (media_id, path, checksum, uploaded_by, uploaded_at)
+Include indexes on DispatchJob(assigned_agent_id, scheduled_date) and DeliveryEvent(job_id, timestamp).
+
+8. APIs (example endpoints)
+* POST /api/login — returns JWT
+* GET /api/agents/{id}/jobs?date=YYYY-MM-DD
+* POST /api/jobs/{job_id}/start — returns accepted
+* POST /api/jobs/{job_id}/complete — payload: gps, photos[], otp?, signature?
+* POST /api/jobs/{job_id}/fail — payload: reason_code, photo
+* POST /api/pettycash/issue — supervisor issues cash
+* POST /api/pettycash/expense — agent submits receipt
+* GET /api/reports/daily?date=YYYY-MM-DD — returns report
+* GET /api/audit/logs?entity=job&since=... — returns audit trail
+All APIs must validate and sanitize inputs; server must reject malformed GPS/location payloads.
+
+9. UX / UI Requirements
+* Mobile: minimal screens — Today’s jobs, Job detail (map + address + call/whatsapp), Start, Complete (capture), Failed (reason), Sync status, Petty cash screen.
+* Web: Dashboard with job map, list, filters; Agent panel; Reports; Petty cash reconciliation page.
+* Provide clear sync indicators and conflict-resolve UI for agents (e.g., “This job was reassigned — accept/acknowledge”).
+
+10. Acceptance Criteria & Test Cases (sample)
+* AC1: Agent can mark delivery offline, turn off internet, travel 2 km, come online later and app syncs event with correct timestamps and GPS recorded at event time.
+* AC2: DeliveryEvent records GPS accuracy ? 50m for 90% of events; events with accuracy > threshold flagged for review.
+* AC3: Petty cash issued and receipt attachments reconcile correctly, and accountant can export reconciliation CSV.
+* AC4: Audit log contains immutable trail for any job status change, visible to Supervisor.
+* AC5: Dashboard loads last 7 days dispatch summary within performance bounds.
+
+11. Risk Analysis (be blunt)
+* Assumption: drivers will always carry smartphones with GPS enabled. Reality: some won’t, batteries die, GPS can be turned off. Mitigation: offline-first app, mandatory pre-shift device checks, stock spare devices.
+* Assumption: GPS == truth. Reality: GPS spoofing exists. Mitigation: require photos/selfie-with-customer/OTP for high-value deliveries; analyze GPS metadata.
+* Fraud risk: petty-cash scams. Mitigation: require receipts, supervisor approval, periodic audits, limits by agent and day.
+* Data privacy risk: storing customer PII. Mitigation: encrypt, retention policy, visible consent where required.
+* Operational: poor adoption by agents if UX is clunky. Mitigation: keep mobile UI minimal and fast; field test with 3-5 drivers and iterate.
+
+12. Deployment & Integration Notes
+* Backend: containerized microservice(s) behind load balancer (or monolith for MVP).
+* DB: PostgreSQL (with PostGIS if you need geospatial queries).
+* Media: Object storage (S3-compatible) with public signed URLs for temporary access.
+* Push/Notifications: FCM for Android; optional SMS/WhatsApp via provider like Twilio/Maytapi.
+* Monitoring: logs (structured), alerts on sync failures, error budget for API latency.
+* Backup & retention: daily DB backups; retention policy for media (e.g., 180 days or per legal needs).
+
+13. Privacy & Legal
+* Store only necessary PII; get corporate approval for customer contact messages.
+* Define data retention policy (e.g., keep delivery proofs for X months).
+* If operating across countries, follow local privacy laws (mention them to legal).
+
+14. MVP vs Phase 2 (prioritized)
+MVP (must-have)
+* Mobile app (Android) with offline-first job list, start/complete/fail, photo proof, sync.
+* Web dashboard: job list, basic map, petty cash issue/submit, audit logs, CSV exports.
+* User auth, RBAC, basic tamper flags, media storage.
+Phase 2 (nice-to-have)
+* Route optimization & live tracking.
+* Signature capture and OCR of invoices.
+* Advanced anti-spoofing (image face-match, device attestation).
+* Automated scheduled reports and Slack/WhatsApp integration.
+* iOS app.
+
+15. Metrics to measure success
+* Sync success rate (target ? 98%).
+* On-time delivery %.
+* Average time per delivery.
+* Number of flagged/tampered events per week.
+* Petty cash reconciliation variance.
+
+16. Acceptance & Delivery Checklist (what you must get from vendor)
+* Full source code (mobile + backend + web) in repo with README and environment setup.
+* API documentation (OpenAPI/Swagger).
+* Deployment scripts (containers, IaC or documented steps).
+* Test cases and sample dataset for QA.
+* Admin user seeded and test users.
+* Post-deployment support window and handover documentation.
+
+Final, unpleasant advice
+If you try to skip offline support or assume perfect GPS/behavior, the system will be useless for real-world daily ops. Build the MVP ruthless about UX and offline resilience, then add bells. Prioritize auditability and receipts — that’s where the nonsense (and losses) happen. If you want, I’ll produce a one-page SRS summary for stakeholders and a JSON OpenAPI draft for the backend next — say nothing, I’ll just do it if you confirm.
+

@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: dispatch
+      POSTGRES_USER: dispatch
+      POSTGRES_PASSWORD: dispatch
+    volumes:
+      - dispatch_pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
+      JWT_SECRET: ${JWT_SECRET}
+      WEB_ORIGIN: ${WEB_ORIGIN}
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+
+  assistant:
+    build:
+      context: .
+      dockerfile: docker/assistant.Dockerfile
+    environment:
+      PORT: 4100
+      WHATSAPP_PROVIDER: stub
+    ports:
+      - "4100:4100"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    environment:
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  dispatch_pgdata:

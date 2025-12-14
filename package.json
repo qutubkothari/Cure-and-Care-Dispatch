@@ -1,0 +1,30 @@
+{
+  "name": "cure-and-care-dispatch",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api,assistant \"npm run dev -w apps/web\" \"npm run dev -w apps/api\" \"npm run dev -w apps/assistant\"",
+    "build": "npm-run-all -s build:web build:api build:assistant",
+    "build:web": "npm run build -w apps/web",
+    "build:api": "npm run build -w apps/api",
+    "build:assistant": "npm run build -w apps/assistant",
+    "lint": "npm-run-all -s lint:web lint:api lint:assistant",
+    "lint:web": "npm run lint -w apps/web",
+    "lint:api": "npm run lint -w apps/api",
+    "lint:assistant": "npm run lint -w apps/assistant",
+    "test": "npm-run-all -s test:api",
+    "test:api": "npm run test -w apps/api"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "npm-run-all": "^4.1.5"
+  }
+}

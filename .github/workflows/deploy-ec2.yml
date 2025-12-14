@@ -1,0 +1,69 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            APP_DIR="${{ secrets.EC2_APP_DIR }}"
+            REPO_URL="${{ secrets.EC2_REPO_URL }}"
+            BRANCH="main"
+            SWAP_GB="4"
+            CLEAR_CACHES="true"
+
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+
+            if [ ! -d .git ]; then
+              git clone "$REPO_URL" "$APP_DIR"
+            fi
+
+            cd "$APP_DIR"
+            git fetch --all --prune
+            git checkout "$BRANCH" || git checkout -b "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+
+            # Swap (RAM safety)
+            if ! swapon --show | grep -q '^/swapfile'; then
+              sudo fallocate -l "${SWAP_GB}G" /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=$((SWAP_GB*1024))
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              sudo swapon /swapfile
+              grep -q "^/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" | sudo tee -a /etc/fstab >/dev/null
+            fi
+
+            # Clear caches (requested)
+            if [ "$CLEAR_CACHES" = "true" ]; then
+              sudo docker builder prune -af || true
+              sudo docker image prune -f || true
+              sync
+              echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null || true
+            fi
+
+            # Compose deploy
+            if [ ! -f .env.ec2 ] && [ -f .env.ec2.example ]; then
+              cp .env.ec2.example .env.ec2
+            fi
+
+            sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d --build
