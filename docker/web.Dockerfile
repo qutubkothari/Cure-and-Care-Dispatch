@@ -14,6 +14,9 @@ COPY --from=deps /repo/apps/web/node_modules ./apps/web/node_modules
 COPY package.json package-lock.json ./
 COPY apps/web ./apps/web
 
+# Reinstall optional deps for Alpine (lightningcss native binary)
+RUN cd apps/web && npm install --no-save --omit=dev
+
 RUN npm run build -w apps/web
 
 FROM node:20-alpine AS runtime
