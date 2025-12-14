@@ -3,6 +3,7 @@ WORKDIR /repo
 
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/api/prisma ./apps/api/prisma
 COPY packages/shared/package.json ./packages/shared/package.json
 
 RUN npm ci
