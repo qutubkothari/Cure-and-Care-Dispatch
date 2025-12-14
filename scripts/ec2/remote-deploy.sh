@@ -110,11 +110,6 @@ sync_repo() {
 deploy_compose() {
   cd "${APP_DIR}"
 
-  if [ -n "${GHCR_USERNAME}" ] && [ -n "${GHCR_TOKEN}" ]; then
-    log "Logging into GHCR"
-    echo "${GHCR_TOKEN}" | sudo docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
-  fi
-
   # Ensure .env.ec2 exists and is populated from provided env
   if [ -z "${JWT_SECRET}" ]; then
     log "JWT_SECRET not provided; refusing to deploy"
@@ -131,9 +126,8 @@ WEB_ORIGIN=${WEB_ORIGIN}
 EOF
   chmod 600 .env.ec2
 
-  log "Pulling and starting services"
-  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 pull
-  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d
+  log "Building and starting services"
+  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d --build
 
   log "Done"
 }
