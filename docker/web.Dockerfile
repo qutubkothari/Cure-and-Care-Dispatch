@@ -10,6 +10,7 @@ FROM node:20-alpine AS build
 WORKDIR /repo
 
 COPY --from=deps /repo/node_modules ./node_modules
+COPY --from=deps /repo/apps/web/node_modules ./apps/web/node_modules
 COPY package.json package-lock.json ./
 COPY apps/web ./apps/web
 
