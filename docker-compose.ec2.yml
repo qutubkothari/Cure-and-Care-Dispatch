@@ -9,9 +9,7 @@ services:
       - dispatch_pgdata:/var/lib/postgresql/data
 
   api:
-    build:
-      context: .
-      dockerfile: docker/api.Dockerfile
+    image: ghcr.io/qutubkothari/cure-and-care-dispatch-api:main
     environment:
       PORT: 4000
       DATABASE_URL: postgresql://dispatch:dispatch@postgres:5432/dispatch
@@ -23,9 +21,7 @@ services:
       - postgres
 
   assistant:
-    build:
-      context: .
-      dockerfile: docker/assistant.Dockerfile
+    image: ghcr.io/qutubkothari/cure-and-care-dispatch-assistant:main
     environment:
       PORT: 4100
       WHATSAPP_PROVIDER: stub
@@ -33,9 +29,7 @@ services:
       - "4100:4100"
 
   web:
-    build:
-      context: .
-      dockerfile: docker/web.Dockerfile
+    image: ghcr.io/qutubkothari/cure-and-care-dispatch-web:main
     environment:
       PORT: 3000
     ports:

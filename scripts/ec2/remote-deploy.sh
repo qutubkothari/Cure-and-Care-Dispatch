@@ -124,8 +124,9 @@ WEB_ORIGIN=${WEB_ORIGIN}
 EOF
   chmod 600 .env.ec2
 
-  log "Building and starting services"
-  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d --build
+  log "Pulling and starting services"
+  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 pull
+  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d
 
   log "Done"
 }
