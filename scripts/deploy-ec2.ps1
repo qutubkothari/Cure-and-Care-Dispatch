@@ -26,6 +26,8 @@ $branch = $config.gitBranch
 $repoUrl = $config.gitRepoUrl
 $jwtSecret = $config.jwtSecret
 $webOrigin = $config.webOrigin
+$ghcrUsername = $config.ghcrUsername
+$ghcrToken = $config.ghcrToken
 $swapGb = $config.swapSizeGb
 $clearCaches = if ($config.clearCaches) { 'true' } else { 'false' }
 
@@ -57,9 +59,11 @@ $remoteEnv = @(
   "REPO_URL='$repoUrl'",
   "JWT_SECRET='$jwtSecret'",
   "WEB_ORIGIN='$webOrigin'",
+  $(if ($ghcrUsername) { "GHCR_USERNAME='$ghcrUsername'" } else { $null }),
+  $(if ($ghcrToken) { "GHCR_TOKEN='$ghcrToken'" } else { $null }),
   "SWAP_GB='$swapGb'",
   "CLEAR_CACHES='$clearCaches'"
-) -join ' '
+) | Where-Object { $_ } | ForEach-Object { $_ } -join ' '
 
 # Upload script content via stdin and run it remotely
 $scriptPath = Join-Path $PSScriptRoot "ec2/remote-deploy.sh"

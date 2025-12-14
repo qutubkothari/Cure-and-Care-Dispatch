@@ -8,6 +8,8 @@ SWAP_GB="${SWAP_GB:-4}"
 CLEAR_CACHES="${CLEAR_CACHES:-true}"
 JWT_SECRET="${JWT_SECRET:-}"
 WEB_ORIGIN="${WEB_ORIGIN:-}"
+GHCR_USERNAME="${GHCR_USERNAME:-}"
+GHCR_TOKEN="${GHCR_TOKEN:-}"
 
 log() { echo "[deploy] $*"; }
 
@@ -107,6 +109,11 @@ sync_repo() {
 
 deploy_compose() {
   cd "${APP_DIR}"
+
+  if [ -n "${GHCR_USERNAME}" ] && [ -n "${GHCR_TOKEN}" ]; then
+    log "Logging into GHCR"
+    echo "${GHCR_TOKEN}" | sudo docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+  fi
 
   # Ensure .env.ec2 exists and is populated from provided env
   if [ -z "${JWT_SECRET}" ]; then
