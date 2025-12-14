@@ -127,7 +127,8 @@ EOF
   chmod 600 .env.ec2
 
   log "Building and starting services"
-  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d --build
+  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 build --no-cache
+  sudo docker compose -f docker-compose.ec2.yml --env-file .env.ec2 up -d
 
   log "Done"
 }
