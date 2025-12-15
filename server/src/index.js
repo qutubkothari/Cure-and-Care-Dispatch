@@ -83,7 +83,7 @@ app.patch('/api/petty-cash/:id/approve', (req, res) => {
 
 // Serve React app for all other routes in production
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  app.use((req, res) => {
     res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
   });
 }
