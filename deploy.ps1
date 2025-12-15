@@ -1,7 +1,7 @@
-# Auto-deploy script for Cure & Care Dispatch
+# Auto-deploy script for Cure & Care Dispatch - App Engine
 
 Write-Host ""
-Write-Host "=== CURE & CARE AUTO-DEPLOY ===" -ForegroundColor Cyan
+Write-Host "=== CURE & CARE AUTO-DEPLOY (App Engine) ===" -ForegroundColor Cyan
 Write-Host ""
 
 # Check current project
@@ -20,39 +20,30 @@ if ($currentProject -ne "care-and-cure-dispatch") {
     Write-Host "Project ID is correct!" -ForegroundColor Green
 }
 
-# Verify project
-$verifyProject = gcloud config get-value project 2>$null
-Write-Host ""
-Write-Host "Verified Project: $verifyProject" -ForegroundColor Cyan
-
-# Enable required APIs
-Write-Host ""
-Write-Host "Enabling required APIs..." -ForegroundColor Yellow
-gcloud services enable cloudbuild.googleapis.com run.googleapis.com containerregistry.googleapis.com
-
 # Commit changes
 Write-Host ""
 Write-Host "Committing changes..." -ForegroundColor Yellow
 git add .
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-git commit -m "Auto-deploy: Professional healthcare UI - $timestamp"
+git commit -m "Deploy: Healthcare UI - $timestamp"
 
 # Push to GitHub
 Write-Host ""
 Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
 git push origin main
 
-# Submit build
+# Deploy to App Engine
 Write-Host ""
-Write-Host "Submitting build to Cloud Build..." -ForegroundColor Cyan
-gcloud builds submit --config=cloudbuild.yaml .
+Write-Host "Deploying to App Engine..." -ForegroundColor Cyan
+Write-Host "This will take 3-5 minutes..." -ForegroundColor Yellow
+gcloud app deploy app.yaml --quiet
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
     Write-Host "DEPLOYMENT SUCCESSFUL!" -ForegroundColor Green
     Write-Host ""
-    Write-Host "Getting service URL..." -ForegroundColor Cyan
-    gcloud run services describe cure-care-dispatch --region=us-central1 --format='value(status.url)'
+    Write-Host "Your app is live at:" -ForegroundColor Cyan
+    gcloud app browse --no-launch-browser
 } else {
     Write-Host ""
     Write-Host "DEPLOYMENT FAILED!" -ForegroundColor Red

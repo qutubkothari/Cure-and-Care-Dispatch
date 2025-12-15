@@ -16,7 +16,7 @@ app.use(express.json());
 
 // Serve static files from React app in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../public')));
+  app.use(express.static(path.join(__dirname, '../../client/dist')));
 }
 
 // Health Check
@@ -111,7 +111,7 @@ app.patch('/api/petty-cash/:id/approve', async (req, res) => {
 // Serve React app for all other routes in production
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
+    res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
   });
 }
 

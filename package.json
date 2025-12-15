@@ -1,0 +1,20 @@
+{
+  "name": "cure-care-dispatch",
+  "version": "1.0.0",
+  "description": "Cure & Care Delivery Tracking System",
+  "main": "server/src/index.js",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "start": "node server/src/index.js",
+    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "gcp-build": "npm run build"
+  },
+  "dependencies": {
+    "express": "^5.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "@prisma/client": "^7.0.1"
+  }
+}

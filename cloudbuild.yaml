@@ -4,18 +4,11 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:$SHORT_SHA'
-      - '-t'
       - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:latest'
       - '.'
     timeout: 1200s
 
   # Push the container image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:$SHORT_SHA'
-
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
@@ -29,7 +22,7 @@ steps:
       - 'deploy'
       - 'cure-care-dispatch'
       - '--image'
-      - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:$SHORT_SHA'
+      - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:latest'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -45,7 +38,6 @@ steps:
       - 'NODE_ENV=production'
 
 images:
-  - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:$SHORT_SHA'
   - 'gcr.io/care-and-cure-dispatch/cure-care-dispatch:latest'
 
 options:

@@ -1,0 +1,26 @@
+# Ignore node_modules
+node_modules/
+*/node_modules/
+**/node_modules/
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore IDE
+.vscode/
+.idea/
+
+# Ignore env files
+.env
+.env.*
+
+# Ignore logs
+*.log
+
+# Ignore OS files
+.DS_Store
+
+# Ignore scripts
+deploy.ps1
+start-backend.ps1
