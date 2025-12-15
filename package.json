@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server/src/index.js",
-    "build": "cd client && npm ci && npm run build",
+    "build": "cd client && npm ci && npm run build && cd ../server && npm ci && npx prisma generate",
     "gcp-build": "npm run build"
   },
   "dependencies": {

@@ -2,8 +2,19 @@ runtime: nodejs20
 
 instance_class: F2
 
+# Cloud SQL Connection
+vpc_access_connector:
+  name: "projects/care-and-cure-dispatch/locations/us-central1/connectors/dispatch-connector"
+
 env_variables:
   NODE_ENV: "production"
+  
+  # Database - will be configured by setup-cloudsql.ps1
+  # DATABASE_URL: "postgresql://user:pass@/dbname?host=/cloudsql/CONNECTION_NAME"
+  
+  # JWT - will be auto-generated
+  # JWT_SECRET: "your-secret"
+  # JWT_EXPIRES_IN: "7d"
 
 handlers:
   # Serve static files from client/dist
