@@ -8,13 +8,12 @@
   },
   "scripts": {
     "start": "node server/src/index.js",
-    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "build": "npm install --prefix client && npm run build --prefix client",
     "gcp-build": "npm run build"
   },
   "dependencies": {
-    "express": "^5.0.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "@prisma/client": "^7.0.1"
+    "express": "^5.2.1"
   }
 }
