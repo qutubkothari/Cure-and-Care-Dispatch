@@ -36,7 +36,7 @@ export default function Dashboard() {
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-white to-primary-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 via-primary-500 to-accent-500 rounded-lg flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-lg">
               <Package className="w-6 h-6 text-white" />
             </div>
             <span className="font-bold text-gray-900">Cure & Care</span>
@@ -99,7 +99,7 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-gray-900">Admin User</p>
               <p className="text-xs text-gray-500">admin@cure.com</p>
             </div>
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 via-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-md ring-2 ring-primary-200">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-primary-200">
               A
             </div>
           </div>
