@@ -16,10 +16,15 @@ env_variables:
   CORS_ORIGIN: "*"
 
 handlers:
-  # Serve static files from client/dist
+  # Serve static files from client/dist with cache control
   - url: /assets
     static_dir: client/dist/assets
     secure: always
+    expiration: "0s"
+    http_headers:
+      Cache-Control: "no-cache, no-store, must-revalidate"
+      Pragma: "no-cache"
+      Expires: "0"
 
   - url: /.*
     script: auto
