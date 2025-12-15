@@ -659,8 +659,16 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-primary-50">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-xl transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-2xl transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-br from-primary-500 via-teal-500 to-accent-500">
           <div className="flex items-center gap-3">
@@ -675,13 +683,13 @@ export default function AdminDashboard() {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-2 overflow-y-auto" style={{ height: 'calc(100vh - 180px)' }}>
+        <nav className="p-4 space-y-2 overflow-y-auto bg-white" style={{ height: 'calc(100vh - 180px)' }}>
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'dashboard'
                 ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
-                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
@@ -692,7 +700,7 @@ export default function AdminDashboard() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'deliveries'
                 ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
-                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
             }`}
           >
             <Package className="w-5 h-5" />
@@ -703,7 +711,7 @@ export default function AdminDashboard() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'drivers'
                 ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
-                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
             }`}
           >
             <Users className="w-5 h-5" />
@@ -714,7 +722,7 @@ export default function AdminDashboard() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'petty-cash'
                 ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
-                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
             }`}
           >
             <DollarSign className="w-5 h-5" />
@@ -725,7 +733,7 @@ export default function AdminDashboard() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'tracking'
                 ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
-                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
             }`}
           >
             <MapPin className="w-5 h-5" />
@@ -734,8 +742,8 @@ export default function AdminDashboard() {
         </nav>
 
         {/* Logout Button */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gradient-to-br from-white to-gray-50">
-          <button className="flex items-center justify-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl w-full font-semibold transition-all hover:shadow-md">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+          <button className="flex items-center justify-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl w-full font-semibold transition-all hover:shadow-md">
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
           </button>
