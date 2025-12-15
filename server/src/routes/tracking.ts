@@ -93,7 +93,7 @@ router.get('/locations/live', async (req: AuthRequest, res) => {
     });
 
     // Get latest location for each driver
-    const locationsPromises = drivers.map(async (driver) => {
+    const locationsPromises = drivers.map(async (driver: any) => {
       const latest = await prisma.driverLocation.findFirst({
         where: { driverId: driver.id },
         orderBy: { timestamp: 'desc' }
