@@ -337,11 +337,14 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium">
                     <Filter className="w-4 h-4" />
                     Filter
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 shadow-md">
+                  <button 
+                    onClick={() => alert('Opening New Delivery Form... (Feature coming soon)')}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 shadow-md font-medium transition-all hover:scale-105"
+                  >
                     <Plus className="w-4 h-4" />
                     New Delivery
                   </button>
