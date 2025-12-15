@@ -31,6 +31,16 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+  const [showNewDeliveryModal, setShowNewDeliveryModal] = useState(false);
+  const [newDelivery, setNewDelivery] = useState({
+    customer: '',
+    phone: '',
+    address: '',
+    items: '',
+    amount: '',
+    driver: '',
+    priority: 'normal'
+  });
 
   // Mock Data
   const stats = [
@@ -344,7 +354,7 @@ export default function AdminDashboard() {
                   </button>
                   {/* New Delivery Button - Opens form (coming soon) */}
                   <button 
-                    onClick={() => alert('Opening New Delivery Form... (Feature coming soon)')}
+                    onClick={() => setShowNewDeliveryModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 shadow-md font-medium transition-all hover:scale-105"
                     title="Create new delivery"
                   >
@@ -944,6 +954,179 @@ export default function AdminDashboard() {
           {renderContent()}
         </div>
       </div>
+
+      {/* New Delivery Modal */}
+      {showNewDeliveryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-primary-600 to-accent-600 text-white px-6 py-4 flex items-center justify-between rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">New Delivery</h2>
+                  <p className="text-sm text-white/80">Create a new delivery order</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowNewDeliveryModal(false)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Customer Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary-600" />
+                  Customer Information
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Customer Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDelivery.customer}
+                      onChange={(e) => setNewDelivery({...newDelivery, customer: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Enter customer name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone Number *
+                    </label>
+                    <input
+                      type="tel"
+                      value={newDelivery.phone}
+                      onChange={(e) => setNewDelivery({...newDelivery, phone: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="+91 98765 43210"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Delivery Address *
+                    </label>
+                    <textarea
+                      value={newDelivery.address}
+                      onChange={(e) => setNewDelivery({...newDelivery, address: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                      rows={3}
+                      placeholder="Enter complete delivery address"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Details */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary-600" />
+                  Order Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Number of Items *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDelivery.items}
+                      onChange={(e) => setNewDelivery({...newDelivery, items: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="e.g., 15 items"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Amount (₹) *
+                    </label>
+                    <input
+                      type="text"
+                      value={newDelivery.amount}
+                      onChange={(e) => setNewDelivery({...newDelivery, amount: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="2,450"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Assign Driver *
+                    </label>
+                    <select
+                      value={newDelivery.driver}
+                      onChange={(e) => setNewDelivery({...newDelivery, driver: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select driver</option>
+                      <option value="Rajesh Kumar">Rajesh Kumar</option>
+                      <option value="Amit Sharma">Amit Sharma</option>
+                      <option value="Suresh Patil">Suresh Patil</option>
+                      <option value="Vikram Singh">Vikram Singh</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority
+                    </label>
+                    <select
+                      value={newDelivery.priority}
+                      onChange={(e) => setNewDelivery({...newDelivery, priority: e.target.value})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="high">High Priority</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 rounded-b-2xl border-t">
+              <button
+                onClick={() => setShowNewDeliveryModal(false)}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Here you would normally send the data to your backend
+                  alert('Delivery created successfully! (In production, this would save to database)');
+                  setShowNewDeliveryModal(false);
+                  setNewDelivery({
+                    customer: '',
+                    phone: '',
+                    address: '',
+                    items: '',
+                    amount: '',
+                    driver: '',
+                    priority: 'normal'
+                  });
+                }}
+                className="px-6 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold shadow-lg transition-all hover:scale-105"
+              >
+                Create Delivery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
