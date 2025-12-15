@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Package, MapPin, Camera, DollarSign, CheckCircle, Clock } from 'lucide-react';
+import { Package, MapPin, Camera, DollarSign, CheckCircle } from 'lucide-react';
 
 export default function DriverApp() {
   const [deliveries] = useState([
@@ -21,7 +21,7 @@ export default function DriverApp() {
           });
           alert('✓ Delivery marked! GPS & timestamp captured.');
         },
-        (error) => {
+        () => {
           alert('Please enable location services to mark delivery.');
         }
       );
