@@ -105,3 +105,51 @@ enum ApprovalStatus {
   APPROVED
   REJECTED
 }
+
+// GPS Tracking
+model DriverLocation {
+  id         String   @id @default(uuid())
+  driverId   String
+  latitude   Float
+  longitude  Float
+  accuracy   Float?
+  speed      Float?
+  heading    Float?
+  timestamp  DateTime @default(now())
+  
+  @@map("driver_locations")
+  @@index([driverId])
+  @@index([timestamp])
+}
+
+// Delivery Tracking History
+model DeliveryTracking {
+  id          String   @id @default(uuid())
+  deliveryId  String
+  status      String
+  latitude    Float?
+  longitude   Float?
+  notes       String?
+  timestamp   DateTime @default(now())
+  
+  @@map("delivery_tracking")
+  @@index([deliveryId])
+  @@index([timestamp])
+}
+
+// WhatsApp Notifications
+model Notification {
+  id         String   @id @default(uuid())
+  recipient  String
+  type       String
+  message    String
+  deliveryId String?
+  status     String   @default("pending")
+  sentAt     DateTime?
+  error      String?
+  createdAt  DateTime @default(now())
+  
+  @@map("notifications")
+  @@index([recipient])
+  @@index([status])
+}
