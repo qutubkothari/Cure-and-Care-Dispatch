@@ -6,11 +6,18 @@ interface WhatsAppMessage {
 }
 export declare function sendWhatsAppNotification({ to, message, deliveryId, type }: WhatsAppMessage): Promise<{
     success: boolean;
+    reason: string;
+    sid?: undefined;
+    error?: undefined;
+} | {
+    success: boolean;
     sid: string;
+    reason?: undefined;
     error?: undefined;
 } | {
     success: boolean;
     error: any;
+    reason?: undefined;
     sid?: undefined;
 }>;
 export declare function sendBulkWhatsAppNotifications(messages: WhatsAppMessage[]): Promise<{
@@ -18,11 +25,18 @@ export declare function sendBulkWhatsAppNotifications(messages: WhatsAppMessage[
     status: "rejected" | "fulfilled";
     data: {
         success: boolean;
+        reason: string;
+        sid?: undefined;
+        error?: undefined;
+    } | {
+        success: boolean;
         sid: string;
+        reason?: undefined;
         error?: undefined;
     } | {
         success: boolean;
         error: any;
+        reason?: undefined;
         sid?: undefined;
     } | null;
     error: any;

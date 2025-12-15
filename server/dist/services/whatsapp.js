@@ -8,9 +8,38 @@ exports.sendBulkWhatsAppNotifications = sendBulkWhatsAppNotifications;
 const client_1 = require("@prisma/client");
 const twilio_1 = __importDefault(require("twilio"));
 const prisma = new client_1.PrismaClient();
-const client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// Lazy initialize Twilio client
+let twilioClient = null;
+function getTwilioClient() {
+    if (!twilioClient) {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
+        // Check if credentials are configured (not placeholders)
+        if (!accountSid || !authToken || accountSid.startsWith('your-')) {
+            return null;
+        }
+        twilioClient = (0, twilio_1.default)(accountSid, authToken);
+    }
+    return twilioClient;
+}
 async function sendWhatsAppNotification({ to, message, deliveryId, type = 'GENERAL' }) {
     try {
+        const client = getTwilioClient();
+        // If Twilio is not configured, log and skip
+        if (!client) {
+            console.log('[WhatsApp] Twilio not configured, skipping notification:', message);
+            // Still log to database
+            await prisma.notification.create({
+                data: {
+                    type,
+                    recipient: to,
+                    message,
+                    status: 'SKIPPED',
+                    deliveryId
+                }
+            });
+            return { success: false, reason: 'Twilio not configured' };
+        }
         // Format phone number (ensure it has country code)
         const formattedPhone = to.startsWith('+') ? to : `+91${to}`;
         // Log notification attempt
