@@ -658,83 +658,86 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-primary-50">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-white to-primary-50">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-xl transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-br from-primary-500 via-teal-500 to-accent-500">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-lg">
-              <Package className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+              <Package className="w-6 h-6 text-primary-600" />
             </div>
-            <span className="font-bold text-gray-900">Cure & Care</span>
+            <span className="font-bold text-white text-lg">Cure & Care</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden">
-            <X className="w-5 h-5 text-gray-500" />
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white hover:bg-white/20 p-1 rounded-lg">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="p-4 space-y-2">
+        {/* Navigation */}
+        <nav className="p-4 space-y-2 overflow-y-auto" style={{ height: 'calc(100vh - 180px)' }}>
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'dashboard'
-                ? 'bg-gradient-to-r from-primary-100 to-accent-50 text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
             }`}
           >
             <LayoutDashboard className="w-5 h-5" />
-            Dashboard
+            <span>Dashboard</span>
           </button>
           <button
             onClick={() => setActiveTab('deliveries')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'deliveries'
-                ? 'bg-gradient-to-r from-primary-100 to-accent-50 text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
             }`}
           >
             <Package className="w-5 h-5" />
-            Deliveries
+            <span>Deliveries</span>
           </button>
           <button
             onClick={() => setActiveTab('drivers')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'drivers'
-                ? 'bg-gradient-to-r from-primary-100 to-accent-50 text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
             }`}
           >
             <Users className="w-5 h-5" />
-            Drivers
+            <span>Drivers</span>
           </button>
           <button
             onClick={() => setActiveTab('petty-cash')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'petty-cash'
-                ? 'bg-gradient-to-r from-primary-100 to-accent-50 text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
             }`}
           >
             <DollarSign className="w-5 h-5" />
-            Petty Cash
+            <span>Petty Cash</span>
           </button>
           <button
             onClick={() => setActiveTab('tracking')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
               activeTab === 'tracking'
-                ? 'bg-gradient-to-r from-primary-100 to-accent-50 text-primary-700 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'text-gray-700 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 hover:text-primary-700'
             }`}
           >
             <MapPin className="w-5 h-5" />
-            Live Tracking
+            <span>Live Tracking</span>
           </button>
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
-          <button className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg w-full font-semibold">
+        {/* Logout Button */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gradient-to-br from-white to-gray-50">
+          <button className="flex items-center justify-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl w-full font-semibold transition-all hover:shadow-md">
             <LogOut className="w-5 h-5" />
-            Logout
+            <span>Logout</span>
           </button>
         </div>
       </div>
@@ -742,17 +745,17 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
         {/* Top Bar */}
-        <div className="bg-white border-b px-6 py-4 sticky top-0 z-40 shadow-sm">
+        <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-40 shadow-md backdrop-blur-sm bg-white/95">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 rounded-xl transition-all"
               >
                 <Menu className="w-5 h-5 text-gray-600" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 capitalize">
+                <h1 className="text-2xl font-bold text-gray-900 capitalize bg-gradient-to-r from-primary-600 via-teal-600 to-accent-600 bg-clip-text text-transparent">
                   {activeTab.replace('-', ' ')}
                 </h1>
                 <p className="text-sm text-gray-600">Welcome back, Admin</p>
