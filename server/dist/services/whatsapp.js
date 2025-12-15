@@ -1,0 +1,71 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendWhatsAppNotification = sendWhatsAppNotification;
+exports.sendBulkWhatsAppNotifications = sendBulkWhatsAppNotifications;
+const client_1 = require("@prisma/client");
+const twilio_1 = __importDefault(require("twilio"));
+const prisma = new client_1.PrismaClient();
+const client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+async function sendWhatsAppNotification({ to, message, deliveryId, type = 'GENERAL' }) {
+    try {
+        // Format phone number (ensure it has country code)
+        const formattedPhone = to.startsWith('+') ? to : `+91${to}`;
+        // Log notification attempt
+        const notification = await prisma.notification.create({
+            data: {
+                recipient: formattedPhone,
+                message,
+                deliveryId,
+                type,
+                status: 'pending'
+            }
+        });
+        // Send via Twilio WhatsApp API
+        const result = await client.messages.create({
+            from: process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886',
+            to: `whatsapp:${formattedPhone}`,
+            body: message
+        });
+        // Update notification status
+        await prisma.notification.update({
+            where: { id: notification.id },
+            data: {
+                status: 'sent',
+                sentAt: new Date()
+            }
+        });
+        console.log('WhatsApp sent:', result.sid);
+        return { success: true, sid: result.sid };
+    }
+    catch (error) {
+        console.error('WhatsApp error:', error);
+        // Log error
+        if (deliveryId) {
+            await prisma.notification.updateMany({
+                where: {
+                    deliveryId,
+                    status: 'pending'
+                },
+                data: {
+                    status: 'failed',
+                    error: error.message
+                }
+            });
+        }
+        return { success: false, error: error.message };
+    }
+}
+// Send bulk notifications
+async function sendBulkWhatsAppNotifications(messages) {
+    const results = await Promise.allSettled(messages.map(msg => sendWhatsAppNotification(msg)));
+    return results.map((result, index) => ({
+        recipient: messages[index].to,
+        status: result.status,
+        data: result.status === 'fulfilled' ? result.value : null,
+        error: result.status === 'rejected' ? result.reason : null
+    }));
+}
+//# sourceMappingURL=whatsapp.js.map
