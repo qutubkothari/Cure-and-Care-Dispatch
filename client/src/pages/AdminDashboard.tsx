@@ -29,6 +29,8 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [trackingEnabled, setTrackingEnabled] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
 
   // Mock Data
   const stats = [
@@ -595,41 +597,107 @@ export default function AdminDashboard() {
             {/* Live Tracking Map Placeholder */}
             <div className="bg-white rounded-xl shadow-soft overflow-hidden">
               <div className="px-6 py-4 border-b bg-gradient-to-r from-white to-primary-50">
-                <h2 className="text-lg font-semibold text-gray-900">Live Driver Tracking</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Live Driver Tracking</h2>
+                  {trackingEnabled && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-green-600 font-medium">Live</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="h-96 bg-gradient-to-br from-gray-100 to-gray-200 relative">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <MapPin className="w-16 h-16 text-primary-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h3>
-                    <p className="text-gray-600 mb-4">Google Maps integration coming soon</p>
-                    <button className="px-6 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold">
-                      Enable Live Tracking
-                    </button>
+                {!trackingEnabled ? (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <MapPin className="w-16 h-16 text-primary-500 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h3>
+                      <p className="text-gray-600 mb-4">Click below to start live tracking</p>
+                      <button 
+                        onClick={() => setTrackingEnabled(true)}
+                        className="px-6 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold transition-all hover:scale-105 shadow-lg"
+                      >
+                        Enable Live Tracking
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg">
+                      <div className="relative mb-4">
+                        <MapPin className="w-16 h-16 text-accent-500 mx-auto animate-bounce" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-20 h-20 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Tracking Activated! 🎯</h3>
+                      <p className="text-gray-600 mb-4 max-w-md">
+                        {selectedDriver 
+                          ? `Now tracking ${drivers.find(d => d.id === selectedDriver)?.name || 'driver'}`
+                          : `Monitoring ${drivers.filter(d => d.status === 'Active').length} active drivers`
+                        }
+                      </p>
+                      <div className="flex gap-3 justify-center">
+                        <button 
+                          onClick={() => {
+                            setTrackingEnabled(false);
+                            setSelectedDriver(null);
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                        >
+                          Stop Tracking
+                        </button>
+                        <button 
+                          onClick={() => window.open('LIVE_TRACKING_GUIDE.md')}
+                          className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 font-medium"
+                        >
+                          📖 Setup Guide
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-4">
+                        💡 Add Google Maps API key to see real map (see LIVE_TRACKING_GUIDE.md)
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Active Drivers List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {drivers.filter(d => d.status === 'Active').map((driver) => (
-                <div key={driver.id} className="bg-white rounded-xl shadow-soft p-6">
+                <div 
+                  key={driver.id} 
+                  className={`bg-white rounded-xl shadow-soft p-6 transition-all ${
+                    selectedDriver === driver.id ? 'ring-2 ring-primary-500 shadow-lg' : ''
+                  }`}
+                >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white text-lg font-bold">
                           {driver.name.split(' ').map(n => n[0]).join('')}
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent-500 rounded-full border-2 border-white"></div>
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-accent-500 rounded-full border-2 border-white animate-pulse"></div>
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{driver.name}</h3>
                         <p className="text-xs text-gray-500">{driver.vehicle}</p>
                       </div>
                     </div>
-                    <button className="px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 text-sm font-medium">
-                      Track
+                    <button 
+                      onClick={() => {
+                        setTrackingEnabled(true);
+                        setSelectedDriver(driver.id);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                        selectedDriver === driver.id
+                          ? 'bg-gradient-to-r from-primary-600 to-accent-600 text-white shadow-md'
+                          : 'bg-primary-50 text-primary-600 hover:bg-primary-100'
+                      }`}
+                    >
+                      {selectedDriver === driver.id ? '📍 Tracking' : 'Track'}
                     </button>
                   </div>
                   <div className="space-y-2">
