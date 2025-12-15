@@ -45,7 +45,7 @@ export default function Login() {
                 className={`flex-1 py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 ${
                   role === 'admin'
                     ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-primary-600 hover:bg-white/50'
+                    : 'bg-transparent text-gray-600 hover:text-primary-600 hover:bg-white/50'
                 }`}
               >
                 Admin
@@ -56,7 +56,7 @@ export default function Login() {
                 className={`flex-1 py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 ${
                   role === 'driver'
                     ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-md'
-                    : 'text-gray-600 hover:text-primary-600 hover:bg-white/50'
+                    : 'bg-transparent text-gray-600 hover:text-primary-600 hover:bg-white/50'
                 }`}
               >
                 Driver
