@@ -594,7 +594,7 @@ export default function AdminDashboard() {
       case 'tracking':
         return (
           <div className="space-y-6">
-            {/* Live Tracking Map Placeholder */}
+            {/* Live Tracking Map */}
             <div className="bg-white rounded-xl shadow-soft overflow-hidden">
               <div className="px-6 py-4 border-b bg-gradient-to-r from-white to-primary-50">
                 <div className="flex items-center justify-between">
@@ -607,13 +607,19 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
-              <div className="h-96 bg-gradient-to-br from-gray-100 to-gray-200 relative">
+              <div className="h-96 bg-gradient-to-br from-blue-50 via-teal-50 to-green-50 relative overflow-hidden">
+                {/* Map Grid Pattern */}
+                <div className="absolute inset-0 opacity-20" style={{
+                  backgroundImage: 'linear-gradient(#00a896 1px, transparent 1px), linear-gradient(90deg, #00a896 1px, transparent 1px)',
+                  backgroundSize: '40px 40px'
+                }}></div>
+
                 {!trackingEnabled ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
                     <div className="text-center">
                       <MapPin className="w-16 h-16 text-primary-500 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h3>
-                      <p className="text-gray-600 mb-4">Click below to start live tracking</p>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Start Live Tracking</h3>
+                      <p className="text-gray-600 mb-4">Monitor all active drivers in real-time</p>
                       <button 
                         onClick={() => setTrackingEnabled(true)}
                         className="px-6 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold transition-all hover:scale-105 shadow-lg"
@@ -623,43 +629,118 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg">
-                      <div className="relative mb-4">
-                        <MapPin className="w-16 h-16 text-accent-500 mx-auto animate-bounce" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-20 h-20 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                  <>
+                    {/* Animated Routes */}
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }}>
+                      <defs>
+                        <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#00a896" stopOpacity="0.6" />
+                          <stop offset="100%" stopColor="#4caf50" stopOpacity="0.6" />
+                        </linearGradient>
+                      </defs>
+                      {/* Route lines */}
+                      <path d="M 50 50 Q 200 100 350 80" stroke="url(#routeGradient)" strokeWidth="3" fill="none" strokeDasharray="10 5">
+                        <animate attributeName="stroke-dashoffset" from="0" to="15" dur="1s" repeatCount="indefinite" />
+                      </path>
+                      <path d="M 100 200 Q 250 180 400 250" stroke="url(#routeGradient)" strokeWidth="3" fill="none" strokeDasharray="10 5">
+                        <animate attributeName="stroke-dashoffset" from="0" to="15" dur="1s" repeatCount="indefinite" />
+                      </path>
+                      <path d="M 600 100 Q 500 200 350 280" stroke="url(#routeGradient)" strokeWidth="3" fill="none" strokeDasharray="10 5">
+                        <animate attributeName="stroke-dashoffset" from="0" to="15" dur="1s" repeatCount="indefinite" />
+                      </path>
+                    </svg>
+
+                    {/* Driver Markers */}
+                    {drivers.filter(d => d.status === 'Active').map((driver, idx) => {
+                      const positions = [
+                        { top: '15%', left: '20%' },
+                        { top: '45%', left: '60%' },
+                        { top: '70%', left: '35%' },
+                        { top: '30%', left: '75%' }
+                      ];
+                      const pos = positions[idx % positions.length];
+                      const isSelected = selectedDriver === driver.id;
+
+                      return (
+                        <div
+                          key={driver.id}
+                          className={`absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all ${
+                            isSelected ? 'scale-125 z-20' : 'z-10 hover:scale-110'
+                          }`}
+                          style={{ top: pos.top, left: pos.left }}
+                          onClick={() => setSelectedDriver(driver.id)}
+                        >
+                          {/* Pulsing circle */}
+                          <div className="absolute inset-0 w-12 h-12 bg-primary-500 rounded-full opacity-20 animate-ping"></div>
+                          
+                          {/* Driver marker */}
+                          <div className={`relative w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
+                            isSelected
+                              ? 'bg-gradient-to-br from-primary-600 to-accent-600 ring-4 ring-white'
+                              : 'bg-gradient-to-br from-primary-500 to-accent-500'
+                          }`}>
+                            <span className="text-white font-bold text-sm">
+                              {driver.name.split(' ').map(n => n[0]).join('')}
+                            </span>
+                          </div>
+
+                          {/* Driver info tooltip */}
+                          {isSelected && (
+                            <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl p-3 whitespace-nowrap animate-fade-in z-30">
+                              <div className="text-xs font-semibold text-gray-900">{driver.name}</div>
+                              <div className="text-xs text-gray-600">{driver.vehicle}</div>
+                              <div className="text-xs text-primary-600 mt-1">📍 {driver.location}</div>
+                              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white rotate-45"></div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Tracking Info Card */}
+                    <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl p-4 z-10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center">
+                            <MapPin className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">
+                              {selectedDriver 
+                                ? `Tracking: ${drivers.find(d => d.id === selectedDriver)?.name}`
+                                : `${drivers.filter(d => d.status === 'Active').length} Active Drivers`
+                              }
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {selectedDriver
+                                ? drivers.find(d => d.id === selectedDriver)?.location
+                                : 'Click on a marker to view details'
+                              }
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {selectedDriver && (
+                            <button 
+                              onClick={() => setSelectedDriver(null)}
+                              className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+                            >
+                              Clear
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => {
+                              setTrackingEnabled(false);
+                              setSelectedDriver(null);
+                            }}
+                            className="px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium"
+                          >
+                            Stop
+                          </button>
                         </div>
                       </div>
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Tracking Activated! 🎯</h3>
-                      <p className="text-gray-600 mb-4 max-w-md">
-                        {selectedDriver 
-                          ? `Now tracking ${drivers.find(d => d.id === selectedDriver)?.name || 'driver'}`
-                          : `Monitoring ${drivers.filter(d => d.status === 'Active').length} active drivers`
-                        }
-                      </p>
-                      <div className="flex gap-3 justify-center">
-                        <button 
-                          onClick={() => {
-                            setTrackingEnabled(false);
-                            setSelectedDriver(null);
-                          }}
-                          className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
-                        >
-                          Stop Tracking
-                        </button>
-                        <button 
-                          onClick={() => window.open('LIVE_TRACKING_GUIDE.md')}
-                          className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 font-medium"
-                        >
-                          📖 Setup Guide
-                        </button>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-4">
-                        💡 Add Google Maps API key to see real map (see LIVE_TRACKING_GUIDE.md)
-                      </p>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
