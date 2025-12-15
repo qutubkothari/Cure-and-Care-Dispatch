@@ -8,13 +8,16 @@ vpc_access_connector:
 
 env_variables:
   NODE_ENV: "production"
-  
-  # Database - will be configured by setup-cloudsql.ps1
-  # DATABASE_URL: "postgresql://user:pass@/dbname?host=/cloudsql/CONNECTION_NAME"
-  
-  # JWT - will be auto-generated
-  # JWT_SECRET: "your-secret"
-  # JWT_EXPIRES_IN: "7d"
+  DATABASE_URL: "postgresql://dispatch_user:yXDnjmPGCoew2W3RtBib@/dispatch?host=/cloudsql/care-and-cure-dispatch:us-central1:dispatch-db"
+  JWT_SECRET: "x1RgkTWDmCqrGLYob7QhZ48w6cjKOXBe"
+  JWT_EXPIRES_IN: "7d"
+  TWILIO_ACCOUNT_SID: "your-twilio-account-sid"
+  TWILIO_AUTH_TOKEN: "your-twilio-auth-token"
+  TWILIO_WHATSAPP_NUMBER: "whatsapp:+14155238886"
+  CLOUDINARY_CLOUD_NAME: "your-cloud-name"
+  CLOUDINARY_API_KEY: "your-api-key"
+  CLOUDINARY_API_SECRET: "your-api-secret"
+  CORS_ORIGIN: "*"
 
 handlers:
   # Serve static files from client/dist

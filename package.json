@@ -7,7 +7,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "node server/src/index.js",
+    "start": "cd server && npx prisma migrate deploy && node src/index.js",
     "build": "cd client && npm ci && npm run build && cd ../server && npm ci && npx prisma generate",
     "gcp-build": "npm run build"
   },
