@@ -906,17 +906,11 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}>
+      <div className="transition-all duration-300 lg:ml-64">
         {/* Top Bar */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-40 shadow-md backdrop-blur-sm bg-white/95">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-gradient-to-r hover:from-primary-50 hover:to-accent-50 rounded-xl transition-all"
-              >
-                <Menu className="w-5 h-5 text-gray-600" />
-              </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 capitalize bg-gradient-to-r from-primary-600 via-teal-600 to-accent-600 bg-clip-text text-transparent">
                   {activeTab.replace('-', ' ')}
@@ -926,6 +920,14 @@ export default function AdminDashboard() {
             </div>
 
             <div className="flex items-center gap-4">
+              {/* Mobile Menu Button - Only visible on small screens */}
+              <button 
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden p-2 bg-gradient-to-r from-primary-500 to-accent-500 hover:from-primary-600 hover:to-accent-600 rounded-lg transition-all shadow-md"
+              >
+                <Menu className="w-5 h-5 text-white" />
+              </button>
+              
               <div className="text-right hidden md:block">
                 <p className="text-sm font-medium text-gray-900">Admin User</p>
                 <p className="text-xs text-gray-500">admin@cure.com</p>
