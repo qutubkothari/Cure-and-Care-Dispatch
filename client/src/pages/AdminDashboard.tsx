@@ -413,11 +413,11 @@ export default function AdminDashboard() {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50">
+                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium">
                         <Eye className="w-4 h-4" />
                         View
                       </button>
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
                         <Navigation className="w-4 h-4" />
                         Track
                       </button>
