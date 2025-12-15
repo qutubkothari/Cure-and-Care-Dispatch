@@ -1,0 +1,107 @@
+// Prisma schema for Cure & Care Dispatch System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries   Delivery[]
+  pettyCash    PettyCash[]
+  
+  @@map("users")
+}
+
+model Delivery {
+  id            String         @id @default(uuid())
+  invoiceNumber String         @unique
+  customerName  String
+  customerPhone String?
+  address       String
+  status        DeliveryStatus @default(PENDING)
+  
+  latitude      Float?
+  longitude     Float?
+  deliveredAt   DateTime?
+  proofImage    String?
+  signature     String?
+  customerNotes String?
+  
+  driverId      String?
+  driver        User?          @relation(fields: [driverId], references: [id])
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@map("deliveries")
+  @@index([driverId])
+  @@index([status])
+}
+
+model PettyCash {
+  id          String         @id @default(uuid())
+  amount      Float
+  category    CashCategory
+  description String
+  status      ApprovalStatus @default(PENDING)
+  
+  latitude    Float?
+  longitude   Float?
+  timestamp   DateTime
+  receiptUrl  String?
+  
+  driverId    String
+  driver      User           @relation(fields: [driverId], references: [id])
+  
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  notes       String?
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  @@map("petty_cash")
+  @@index([driverId])
+  @@index([status])
+}
+
+enum Role {
+  ADMIN
+  DRIVER
+  MANAGER
+}
+
+enum DeliveryStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum CashCategory {
+  PETROL
+  TOLL
+  PARKING
+  MAINTENANCE
+  OTHER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

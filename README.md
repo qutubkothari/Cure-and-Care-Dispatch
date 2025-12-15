@@ -1,89 +1,178 @@
-# Cure & Care Dispatch
+# Cure & Care Dispatch - Professional Delivery Tracking System
 
-Enterprise-grade Dispatch Recording System (PWA + admin dashboard) with a backend API, in-house Postgres DB, and a WhatsApp assistant service.
+## 🎨 **Beautiful Enterprise-Grade UI**
+- Lemon-green and light-green professional branding
+- Responsive design for all devices
+- PWA-ready for mobile drivers
+- Real-time GPS tracking
+- Offline-first architecture
 
-## Local development
+## 🚀 **Quick Start**
 
-### Prereqs (Windows)
+### Prerequisites
+- Node.js 18+ installed
+- PostgreSQL database (local or cloud)
 
-- Install Docker Desktop (so `docker` + `docker compose` work)
-- Node.js 20+ (npm workspaces)
-
-### 1) Start the database
-
+### 1. Install Dependencies
 ```powershell
-cd "c:\Users\musta\OneDrive\Documents\GitHub\Cure and Care Dispatch"
-docker compose up -d
-```
+# Frontend
+cd client
+npm install
 
-Or run everything with the helper script (recommended):
-
-```powershell
-cd "c:\Users\musta\OneDrive\Documents\GitHub\Cure and Care Dispatch"
-./scripts/local-up.ps1
-```
-
-### 2) Configure env
-
-- API: copy `apps/api/.env.example` to `apps/api/.env`
-- Assistant: copy `apps/assistant/.env.example` to `apps/assistant/.env`
-
-### 3) Install dependencies
-
-```powershell
-cd "c:\Users\musta\OneDrive\Documents\GitHub\Cure and Care Dispatch"
+# Backend
+cd ../server
 npm install
 ```
 
-### 4) Initialize DB schema (Prisma)
-
-```powershell
-cd "c:\Users\musta\OneDrive\Documents\GitHub\Cure and Care Dispatch"
-npm run prisma:generate -w apps/api
-npm run prisma:migrate -w apps/api
+### 2. Configure Database
+Edit `server/.env` with your PostgreSQL connection:
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/dispatch_db"
 ```
 
-### 5) Run everything
-
+### 3. Start Application
 ```powershell
-cd "c:\Users\musta\OneDrive\Documents\GitHub\Cure and Care Dispatch"
+# Terminal 1: Frontend (already running)
+cd client
 npm run dev
+
+# Terminal 2: Backend
+cd server
+npm run db:push    # Create database tables
+npm run dev        # Start API server
 ```
 
-- Web: `http://localhost:3000`
-- API health: `http://localhost:4000/health`
-- API docs: `http://localhost:4000/docs`
-- Assistant health: `http://localhost:4100/health`
+### 4. Access Application
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:4000
+- **Health Check**: http://localhost:4000/health
 
-## EC2 hosting (target)
+## 👥 **Demo Accounts**
 
-- Recommended: run services as Docker containers behind an ALB/Nginx reverse proxy.
-- This repo includes `docker-compose.ec2.yml` for an “in-house” Postgres on the same EC2 instance.
+### Admin Dashboard
+- Email: `admin@cure.com`
+- Password: `admin123`
+- Access: Full system control, delivery tracking, petty cash approval
 
-### EC2 quick start (Docker Compose)
+### Driver App  
+- Email: `driver@cure.com`
+- Password: `driver123`
+- Access: Mobile-optimized, delivery recording, GPS capture
 
-1) Copy `.env.ec2.example` to `.env.ec2` and set `JWT_SECRET` (and later your domain).
-2) Run:
+## 📱 **Features**
 
-```bash
-./scripts/ec2/up.sh
-```
+### Admin Dashboard
+- ✅ Live delivery tracking with GPS
+- ✅ Real-time driver status
+- ✅ Petty cash approval system
+- ✅ Excel export for accounting
+- ✅ Complete audit trail
+- ✅ Performance analytics
 
-### Windows one-command deploy to EC2
+### Driver PWA
+- ✅ One-tap delivery confirmation
+- ✅ Automatic GPS + timestamp capture
+- ✅ Photo/signature proof of delivery
+- ✅ Petty cash claims with evidence
+- ✅ Offline mode with auto-sync
+- ✅ Simple, non-technical interface
 
-1) Edit `deploy.ec2.json`:
-	- Set `gitRepoUrl`
-	- Set a strong `jwtSecret`
-	- Confirm `user` (usually `ubuntu`) and `appDir`
-2) Run:
+## 🗄️ **Database Schema**
 
+### Users
+- ID, email, password, name, role (ADMIN/DRIVER/MANAGER)
+- Phone, active status, timestamps
+
+### Deliveries
+- Invoice number, customer details, address
+- Status (PENDING/IN_TRANSIT/DELIVERED/CANCELLED)
+- GPS coordinates, delivery proof
+- Driver assignment, timestamps
+
+### Petty Cash
+- Amount, category (PETROL/TOLL/PARKING/etc.)
+- GPS + timestamp, receipt photo/video
+- Approval status, notes
+- Driver reference, audit trail
+
+## 🛠️ **Tech Stack**
+
+### Frontend
+- **React 19** with TypeScript
+- **Vite** for blazing fast dev experience
+- **TailwindCSS v3** for beautiful styling
+- **React Router** for navigation
+- **TanStack Query** for data fetching
+- **Lucide Icons** for professional icons
+
+### Backend
+- **Express.js** - Fast API server
+- **Prisma ORM** - Type-safe database access
+- **PostgreSQL** - Reliable production database
+- **JWT** - Secure authentication
+- **TypeScript** - Type safety
+
+## 📦 **Deployment**
+
+### Option 1: Google Cloud Run (Recommended)
 ```powershell
-cd "c:\Users\musta\OneDrive\Documents\GitHub\Cure and Care Dispatch"
-./scripts/deploy-ec2.ps1
+# Deploy frontend
+cd client
+gcloud run deploy cure-care-web --source . --region=asia-south1
+
+# Deploy backend
+cd server
+gcloud run deploy cure-care-api --source . --region=asia-south1
 ```
 
-This deploy script also:
-- Creates swap on EC2 (adds RAM safety to avoid hangs)
-- Clears Docker build cache + drops Linux page cache (optional; enabled by default in `deploy.ec2.json`)
+### Option 2: Vercel + Railway
+- Frontend → Vercel (automatic Next.js/Vite detection)
+- Backend → Railway (automatic Express detection)
+- Database → Railway PostgreSQL or Neon
 
-WhatsApp provider details will be plugged into `apps/assistant` once you share the API spec.
+### Option 3: Traditional VPS
+- Upload code to EC2/DigitalOcean
+- Install PostgreSQL
+- Run with PM2 for process management
+
+## 🔒 **Security**
+- JWT-based authentication
+- Password hashing with bcrypt
+- CORS protection
+- Input validation
+- SQL injection protection via Prisma
+
+## 📊 **API Endpoints**
+
+```
+GET    /health              - Health check
+GET    /api/deliveries      - List all deliveries
+POST   /api/deliveries      - Create new delivery
+PATCH  /api/deliveries/:id/deliver - Mark as delivered
+GET    /api/petty-cash      - List all petty cash claims
+POST   /api/petty-cash      - Create new claim
+PATCH  /api/petty-cash/:id/approve - Approve claim
+```
+
+## 🎯 **Benefits**
+
+✅ **Zero Paperwork** - Fully digital workflow
+✅ **Fraud Resistant** - GPS + timestamp on every action  
+✅ **Fast Reconciliation** - Hours reduced to minutes
+✅ **Reliable Proof** - Photo/signature evidence
+✅ **Simple UX** - Designed for non-technical drivers
+✅ **Real-time Visibility** - Live tracking dashboard
+✅ **Cost Effective** - No app store fees (PWA)
+✅ **Offline Support** - Works without internet
+
+## 📞 **Support**
+
+For issues or questions:
+1. Check the console for error messages
+2. Verify PostgreSQL is running
+3. Ensure ports 5173 and 4000 are available
+4. Check `.env` configuration
+
+---
+
+**© 2025 Cure & Care. Built with ❤️ for efficient delivery management.**
