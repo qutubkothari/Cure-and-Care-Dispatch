@@ -1,0 +1,439 @@
+﻿[
+  {
+    "insertId": "694385950008b6d9f4021912",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.907549216Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "}",
+    "timestamp": "2025-12-18T04:39:49.571097Z"
+  },
+  {
+    "insertId": "694385950008b6d659cd5df7",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.907549216Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '    at async /workspace/server/dist/routes/auth.js:59:22'",
+    "timestamp": "2025-12-18T04:39:49.571094Z"
+  },
+  {
+    "insertId": "694385950008b6d35650c33c",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.907549216Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '    at async l (/workspace/server/node_modules/@prisma/client/runtime/library.js:130:9633)\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571091Z"
+  },
+  {
+    "insertId": "694385950008b6d1b220cbd7",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.907549216Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '    at $n.request (/workspace/server/node_modules/@prisma/client/runtime/library.js:121:6307)\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571089Z"
+  },
+  {
+    "insertId": "694385950008b6cef51e1228",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.907549216Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '    at $n.handleAndLogRequestError (/workspace/server/node_modules/@prisma/client/runtime/library.js:121:6623)\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571086Z"
+  },
+  {
+    "insertId": "694385950008b6c894bec6de",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.907549216Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '    at $n.handleRequestError (/workspace/server/node_modules/@prisma/client/runtime/library.js:121:7315)\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571080Z"
+  },
+  {
+    "insertId": "694385950008b6c35200c586",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    'The table `public.users` does not exist in the current database.\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571075Z"
+  },
+  {
+    "insertId": "694385950008b6c02a095134",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571072Z"
+  },
+  {
+    "insertId": "694385950008b6be9b6c46b3",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571070Z"
+  },
+  {
+    "insertId": "694385950008b6bbdc747c81",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    'Invalid `prisma.user.findUnique()` invocation:\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571067Z"
+  },
+  {
+    "insertId": "694385950008b6b8049acdf3",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "  stack: 'PrismaClientKnownRequestError: \\n' +",
+    "timestamp": "2025-12-18T04:39:49.571064Z"
+  },
+  {
+    "insertId": "694385950008b6aa87874e30",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    'The table `public.users` does not exist in the current database.',",
+    "timestamp": "2025-12-18T04:39:49.571050Z"
+  },
+  {
+    "insertId": "694385950008b6a7eed8d629",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571047Z"
+  },
+  {
+    "insertId": "694385950008b6a43eb7a3f5",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    '\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571044Z"
+  },
+  {
+    "insertId": "694385950008b6a1b47ddb5c",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "    'Invalid `prisma.user.findUnique()` invocation:\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571041Z"
+  },
+  {
+    "insertId": "694385950008b69eee957247",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "  message: '\\n' +",
+    "timestamp": "2025-12-18T04:39:49.571038Z"
+  },
+  {
+    "insertId": "694385950008b69afb4b71ab",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "  email: 'admin@cure.com',",
+    "timestamp": "2025-12-18T04:39:49.571034Z"
+  },
+  {
+    "insertId": "694385950008b680e3e4b24f",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:49.575462917Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "Login failed: {",
+    "timestamp": "2025-12-18T04:39:49.571008Z"
+  },
+  {
+    "insertId": "6943858000075d0a124d55f5",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:28.488315175Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice",
+    "timestamp": "2025-12-18T04:39:28.482570Z"
+  },
+  {
+    "insertId": "6943858000075d0878a717c5",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:28.488315175Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice To update run: npm install -g npm@11.7.0",
+    "timestamp": "2025-12-18T04:39:28.482568Z"
+  },
+  {
+    "insertId": "6943858000075d0481be4b33",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:28.488315175Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0",
+    "timestamp": "2025-12-18T04:39:28.482564Z"
+  },
+  {
+    "insertId": "6943858000075d010d3a21e6",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:28.488315175Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice New major version of npm available! 10.8.2 -> 11.7.0",
+    "timestamp": "2025-12-18T04:39:28.482561Z"
+  },
+  {
+    "insertId": "6943858000075cea1953f1af",
+    "labels": {
+      "clone_id": "0007e26d6896e4d688d812c4933b326116645b333be9e7e3a875a15e461a704bc67179293e7ee2e2632d4e6d8a11ae0b21d3ccdc4c1739d891912c19c34720fbd5862896e6e181ec233f9676db6a"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T04:39:28.488315175Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t100637",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice",
+    "timestamp": "2025-12-18T04:39:28.482538Z"
+  }
+]

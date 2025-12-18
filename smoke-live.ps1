@@ -85,6 +85,47 @@ function Login-AndGetToken {
   return $resp
 }
 
+function Register-User {
+  param(
+    [Parameter(Mandatory = $true)][string]$Email,
+    [Parameter(Mandatory = $true)][string]$Password,
+    [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)][string]$Role
+  )
+
+  try {
+    Invoke-Json -Method 'POST' -Path '/api/auth/register' -Body @{ email = $Email; password = $Password; name = $Name; role = $Role }
+  } catch {
+    $msg = $_.Exception.Message
+    if ($msg -match 'HTTP 409') {
+      # Email already exists; ignore
+      return
+    }
+    throw
+  }
+}
+
+function Login-OrRegister {
+  param(
+    [Parameter(Mandatory = $true)][string]$Email,
+    [Parameter(Mandatory = $true)][string]$Password,
+    [Parameter(Mandatory = $true)][string]$Name,
+    [Parameter(Mandatory = $true)][string]$Role
+  )
+
+  try {
+    return Login-AndGetToken -Email $Email -Password $Password
+  } catch {
+    $msg = $_.Exception.Message
+    if ($msg -match 'HTTP 401') {
+      Write-Host "Login unauthorized for $Email; attempting to register..." -ForegroundColor Yellow
+      Register-User -Email $Email -Password $Password -Name $Name -Role $Role
+      return Login-AndGetToken -Email $Email -Password $Password
+    }
+    throw
+  }
+}
+
 Write-Host "=== LIVE SMOKE TEST ===" -ForegroundColor Cyan
 Write-Host "BaseUrl: $BaseUrl" -ForegroundColor Yellow
 
@@ -166,8 +207,8 @@ Write-Host "Logging in as Admin + Driver..." -ForegroundColor Gray
 $adminLogin = $null
 $driverLogin = $null
 try {
-  $adminLogin = Login-AndGetToken -Email $AdminEmail -Password $AdminPassword
-  $driverLogin = Login-AndGetToken -Email $DriverEmail -Password $DriverPassword
+  $adminLogin = Login-OrRegister -Email $AdminEmail -Password $AdminPassword -Name 'Admin User' -Role 'ADMIN'
+  $driverLogin = Login-OrRegister -Email $DriverEmail -Password $DriverPassword -Name 'Driver User' -Role 'DRIVER'
 } catch {
   Write-Host "AUTH QC RESULT: FAIL (login)" -ForegroundColor Red
   throw
