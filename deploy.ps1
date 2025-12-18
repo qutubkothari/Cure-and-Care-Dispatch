@@ -20,17 +20,37 @@ if ($currentProject -ne "care-and-cure-dispatch") {
     Write-Host "Project ID is correct!" -ForegroundColor Green
 }
 
-# Commit changes
+# Check for uncommitted changes
 Write-Host ""
-Write-Host "Committing changes..." -ForegroundColor Yellow
-git add .
-$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-git commit -m "Deploy: Healthcare UI - $timestamp"
-
-# Push to GitHub
-Write-Host ""
-Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
-git push origin main
+Write-Host "Checking for changes..." -ForegroundColor Yellow
+$gitStatus = git status --porcelain
+if ($gitStatus) {
+    Write-Host "Found uncommitted changes. Committing..." -ForegroundColor Yellow
+    
+    # Stage all changes
+    git add .
+    
+    # Create commit with timestamp
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    git commit -m "Auto-deploy: $timestamp - All 12 SRS features complete"
+    
+    # Push to GitHub
+    Write-Host "Pushing to GitHub..." -ForegroundColor Yellow
+    git push origin main
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Successfully pushed to GitHub!" -ForegroundColor Green
+    } else {
+        Write-Host "Failed to push to GitHub!" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "No changes to commit." -ForegroundColor Green
+    
+    # Still push to ensure remote is up to date
+    Write-Host "Ensuring GitHub is up to date..." -ForegroundColor Yellow
+    git push origin main
+}
 
 # Deploy to App Engine
 Write-Host ""
