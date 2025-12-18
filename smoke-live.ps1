@@ -94,7 +94,7 @@ function Register-User {
   )
 
   try {
-    Invoke-Json -Method 'POST' -Path '/api/auth/register' -Body @{ email = $Email; password = $Password; name = $Name; role = $Role }
+    $null = Invoke-Json -Method 'POST' -Path '/api/auth/register' -Body @{ email = $Email; password = $Password; name = $Name; role = $Role }
   } catch {
     $msg = $_.Exception.Message
     if ($msg -match 'HTTP 409') {

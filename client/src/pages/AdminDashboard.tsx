@@ -121,38 +121,31 @@ export default function AdminDashboard() {
     loadData();
   }, [activeTab, filters]);
 
+  const loadDriversFromUsers = async () => {
+    const response = await api.getUsers();
+    const users = (response.data ?? []) as Array<any>;
+    const driverUsers: Driver[] = users
+      .filter((u) => u.role === 'DRIVER')
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone ?? undefined,
+        isActive: Boolean(u.isActive)
+      }));
+    setDrivers(driverUsers);
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
-      if (activeTab === 'deliveries' || activeTab === 'dashboard') {
+      // Drivers should come from /api/users so they show even when there are no deliveries yet.
+      await loadDriversFromUsers();
+
+      if (activeTab === 'deliveries' || activeTab === 'dashboard' || activeTab === 'drivers') {
         const response = await api.getDeliveries(filters);
         const list = response.data?.deliveries ?? [];
         setDeliveries(list);
-        
-        // Extract unique drivers from deliveries
-        const uniqueDrivers: Driver[] = [];
-        const driverIds = new Set<string>();
-        list.forEach((delivery: Delivery) => {
-          if (delivery.driver && !driverIds.has(delivery.driver.id)) {
-            driverIds.add(delivery.driver.id);
-            uniqueDrivers.push(delivery.driver);
-          }
-        });
-        setDrivers(uniqueDrivers);
-      }
-      if (activeTab === 'drivers') {
-        // Get all deliveries to extract drivers
-        const response = await api.getDeliveries();
-        const list = response.data?.deliveries ?? [];
-        const uniqueDrivers: Driver[] = [];
-        const driverIds = new Set<string>();
-        list.forEach((delivery: Delivery) => {
-          if (delivery.driver && !driverIds.has(delivery.driver.id)) {
-            driverIds.add(delivery.driver.id);
-            uniqueDrivers.push(delivery.driver);
-          }
-        });
-        setDrivers(uniqueDrivers);
       }
       if (activeTab === 'petty-cash' || activeTab === 'dashboard') {
         const response = await api.getPettyCash();
@@ -160,6 +153,40 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddDriver = async () => {
+    const name = prompt('Driver name:');
+    if (!name || !name.trim()) return;
+
+    const email = prompt('Driver email:');
+    if (!email || !email.trim()) return;
+
+    const phone = prompt('Driver phone (optional):') || '';
+
+    const password = prompt('Temporary password (min 6 chars):');
+    if (!password || password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.createUser({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim() || undefined,
+        password,
+        role: 'DRIVER'
+      });
+      await loadDriversFromUsers();
+      alert('✓ Driver created successfully');
+    } catch (error: any) {
+      console.error('Failed to create driver:', error);
+      alert(error?.response?.data?.error || 'Failed to create driver. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -634,7 +661,10 @@ export default function AdminDashboard() {
 
             {/* Add Driver Button */}
             <div className="bg-white rounded-xl shadow-soft p-6 text-center">
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold shadow-lg">
+              <button
+                onClick={handleAddDriver}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold shadow-lg"
+              >
                 <Plus className="w-5 h-5" />
                 Add New Driver
               </button>
