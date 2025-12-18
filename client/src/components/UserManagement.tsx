@@ -245,14 +245,14 @@ const UserManagement = () => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openEditModal(user)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 bg-white border border-gray-200 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         title="Edit User"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleToggleStatus(user)}
-                        className={`p-2 ${
+                        className={`p-2 bg-white border border-gray-200 ${
                           user.isActive ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'
                         } rounded-lg transition-colors`}
                         title={user.isActive ? 'Deactivate' : 'Activate'}
@@ -261,7 +261,7 @@ const UserManagement = () => {
                       </button>
                       <button
                         onClick={() => openPasswordModal(user)}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                        className="p-2 bg-white border border-gray-200 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
                         title="Reset Password"
                       >
                         <Key className="w-4 h-4" />
