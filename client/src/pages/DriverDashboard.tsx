@@ -91,11 +91,11 @@ export default function DriverDashboard() {
         const params: any = { driverId };
         if (dateFilter) params.date = dateFilter;
         const response = await api.getDeliveries(params);
-        setDeliveries(response.data);
+        setDeliveries(response.data?.deliveries ?? []);
       }
       if (activeTab === 'petty-cash' || activeTab === 'home') {
         const response = await api.getPettyCash({ userId: driverId });
-        setPettyCash(response.data);
+        setPettyCash(response.data?.entries ?? []);
       }
     } catch (error) {
       console.error('Failed to load data:', error);

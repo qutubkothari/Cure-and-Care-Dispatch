@@ -126,12 +126,13 @@ export default function AdminDashboard() {
     try {
       if (activeTab === 'deliveries' || activeTab === 'dashboard') {
         const response = await api.getDeliveries(filters);
-        setDeliveries(response.data);
+        const list = response.data?.deliveries ?? [];
+        setDeliveries(list);
         
         // Extract unique drivers from deliveries
         const uniqueDrivers: Driver[] = [];
         const driverIds = new Set<string>();
-        response.data.forEach((delivery: Delivery) => {
+        list.forEach((delivery: Delivery) => {
           if (delivery.driver && !driverIds.has(delivery.driver.id)) {
             driverIds.add(delivery.driver.id);
             uniqueDrivers.push(delivery.driver);
@@ -142,9 +143,10 @@ export default function AdminDashboard() {
       if (activeTab === 'drivers') {
         // Get all deliveries to extract drivers
         const response = await api.getDeliveries();
+        const list = response.data?.deliveries ?? [];
         const uniqueDrivers: Driver[] = [];
         const driverIds = new Set<string>();
-        response.data.forEach((delivery: Delivery) => {
+        list.forEach((delivery: Delivery) => {
           if (delivery.driver && !driverIds.has(delivery.driver.id)) {
             driverIds.add(delivery.driver.id);
             uniqueDrivers.push(delivery.driver);
@@ -154,7 +156,7 @@ export default function AdminDashboard() {
       }
       if (activeTab === 'petty-cash' || activeTab === 'dashboard') {
         const response = await api.getPettyCash();
-        setPettyCash(response.data);
+        setPettyCash(response.data?.entries ?? []);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
