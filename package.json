@@ -7,7 +7,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "cd server && node repairMigrations.js && npx prisma migrate deploy && node dist/index.js",
+    "start": "cd server && node repairMigrations.js && npx prisma migrate deploy && node migrateLegacyUsers.js && node dist/index.js",
     "build": "cd client && npm ci && npm run build && cd ../server && npm ci && npx prisma generate && npm run build",
     "gcp-build": "npm run build"
   },
