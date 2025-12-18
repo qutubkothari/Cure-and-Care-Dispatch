@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Package, 
   MapPin, 
@@ -58,6 +59,7 @@ interface PettyCash {
 }
 
 export default function DriverDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [pettyCash, setPettyCash] = useState<PettyCash[]>([]);
@@ -68,6 +70,12 @@ export default function DriverDashboard() {
   const [selectedDeliveryForFail, setSelectedDeliveryForFail] = useState<Delivery | null>(null);
   const [showPettyCashForm, setShowPettyCashForm] = useState(false);
   const [dateFilter, setDateFilter] = useState('');
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   useEffect(() => {
     loadData();
@@ -861,7 +869,10 @@ export default function DriverDashboard() {
             </div>
 
             {/* Logout */}
-            <button className="w-full bg-red-50 text-red-600 font-bold py-3 px-6 rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-50 text-red-600 font-bold py-3 px-6 rounded-xl hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+            >
               <LogOut className="w-5 h-5" />
               Logout
             </button>

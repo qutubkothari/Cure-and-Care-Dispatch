@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Package, 
@@ -79,6 +80,7 @@ interface PettyCash {
 }
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,6 +110,12 @@ export default function AdminDashboard() {
     driverId: '',
     priority: 'NORMAL'
   });
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   useEffect(() => {
     loadData();
@@ -1127,7 +1135,10 @@ export default function AdminDashboard() {
 
         {/* Logout Button */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-          <button className="flex items-center justify-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl w-full font-semibold transition-all hover:shadow-md">
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-3 px-4 py-3 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl w-full font-semibold transition-all hover:shadow-md"
+          >
             <LogOut className="w-5 h-5" />
             <span>Logout</span>
           </button>

@@ -1,20 +1,53 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, LogIn } from 'lucide-react';
+import * as api from '../services/api';
 
 export default function Login() {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'admin' | 'driver'>('admin');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Add actual authentication
-    if (role === 'admin') {
-      navigate('/dashboard');
-    } else {
-      navigate('/driver');
+    setError(null);
+    setLoading(true);
+    try {
+      if (mode === 'register') {
+        await api.register({
+          email,
+          password,
+          name,
+          phone: phone || undefined,
+          role: role === 'admin' ? 'ADMIN' : 'DRIVER'
+        });
+      }
+
+      const response = await api.login(email, password);
+      const { token, user } = response.data;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Route based on the authenticated role (not the UI toggle).
+      if (user?.role === 'ADMIN') {
+        navigate('/dashboard');
+      } else {
+        navigate('/driver');
+      }
+    } catch (err: any) {
+      const fallback = mode === 'register'
+        ? 'Registration failed. Please check details and try again.'
+        : 'Login failed. Please check your credentials.';
+      const message = err?.response?.data?.error || fallback;
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,6 +111,37 @@ export default function Login() {
               />
             </div>
 
+            {mode === 'register' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                    placeholder="Your name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone (optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                    placeholder="+1 555 555 5555"
+                  />
+                </div>
+              </>
+            )}
+
             {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -96,12 +160,37 @@ export default function Login() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500 text-white font-bold py-3.5 px-4 rounded-xl hover:from-primary-700 hover:via-primary-600 hover:to-accent-600 focus:outline-none focus:ring-4 focus:ring-primary-300 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500 text-white font-bold py-3.5 px-4 rounded-xl hover:from-primary-700 hover:via-primary-600 hover:to-accent-600 focus:outline-none focus:ring-4 focus:ring-primary-300 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <LogIn className="w-5 h-5" />
-              Sign In as {role === 'admin' ? 'Admin' : 'Driver'}
+              {loading
+                ? (mode === 'register' ? 'Creating Account…' : 'Signing In…')
+                : (mode === 'register'
+                    ? `Create ${role === 'admin' ? 'Admin' : 'Driver'} Account`
+                    : `Sign In as ${role === 'admin' ? 'Admin' : 'Driver'}`
+                  )}
             </button>
+
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+                {error}
+              </div>
+            )}
           </form>
+
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setMode(mode === 'login' ? 'register' : 'login');
+              }}
+              className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+            >
+              {mode === 'login' ? 'New here? Create an account' : 'Already have an account? Sign in'}
+            </button>
+          </div>
 
           {/* Demo Credentials */}
           <div className="mt-6 p-4 bg-primary-50 rounded-lg">
