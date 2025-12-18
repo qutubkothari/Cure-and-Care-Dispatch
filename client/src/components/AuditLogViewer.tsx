@@ -230,7 +230,7 @@ function AuditLogViewer() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => setExpandedLog(isExpanded ? null : log.id)}
-                          className="text-sm text-primary-600 hover:text-primary-700"
+                          className="inline-flex items-center px-3 py-1.5 rounded-md bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 transition-colors"
                         >
                           {isExpanded ? 'Hide' : 'Show'} Details
                         </button>
