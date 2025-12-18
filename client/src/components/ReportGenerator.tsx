@@ -290,7 +290,7 @@ function ReportGenerator({ drivers }: ReportGeneratorProps) {
                   className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
                     filters.reportType === type
                       ? 'border-primary-500 bg-primary-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300'
                   }`}
                 >
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -299,7 +299,7 @@ function ReportGenerator({ drivers }: ReportGeneratorProps) {
                     {getReportIcon(type)}
                   </div>
                   <div className="text-left flex-1">
-                    <div className="font-medium text-sm">{getReportTitle(type).replace(' Report', '')}</div>
+                    <div className="font-medium text-sm text-gray-900">{getReportTitle(type).replace(' Report', '')}</div>
                   </div>
                 </button>
               ))}
