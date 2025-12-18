@@ -1,0 +1,13 @@
+# Editor
+.vscode/
+
+# Node
+**/node_modules/
+
+# Env
+.env
+.env.*
+
+# Local tooling announcements
+eslint-client-report.json
+eslint-client-summary.txt
