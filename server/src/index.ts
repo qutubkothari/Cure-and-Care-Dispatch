@@ -8,6 +8,9 @@ import deliveryRoutes from './routes/deliveries';
 import pettyCashRoutes from './routes/pettyCash';
 import trackingRoutes from './routes/tracking';
 import uploadRoutes from './routes/upload';
+import auditRoutes from './routes/audit';
+import reportsRoutes from './routes/reports';
+import usersRoutes from './routes/users';
 import { authenticateToken } from './middleware/auth';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -43,6 +46,9 @@ app.use('/api/deliveries', authenticateToken, deliveryRoutes);
 app.use('/api/petty-cash', authenticateToken, pettyCashRoutes);
 app.use('/api/tracking', authenticateToken, trackingRoutes);
 app.use('/api/upload', authenticateToken, uploadRoutes);
+app.use('/api/audit', authenticateToken, auditRoutes);
+app.use('/api/reports', authenticateToken, reportsRoutes);
+app.use('/api/users', authenticateToken, usersRoutes);
 
 // WebSocket connection
 io.on('connection', (socket) => {

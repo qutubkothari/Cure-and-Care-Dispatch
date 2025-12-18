@@ -99,6 +99,7 @@ router.post('/images', upload.array('images', 5), async (req, res) => {
         }));
         res.json({
             message: 'Images uploaded successfully',
+            urls: results.map(r => r.secure_url),
             images: urls
         });
     }

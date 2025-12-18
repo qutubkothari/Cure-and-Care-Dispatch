@@ -51,6 +51,9 @@ export const getDelivery = (id: string) =>
 export const createDelivery = (data: any) =>
   api.post('/deliveries', data);
 
+export const bulkCreateDeliveries = (deliveries: any[]) =>
+  api.post('/deliveries/bulk', { deliveries });
+
 export const updateDeliveryStatus = (id: string, data: any) =>
   api.put(`/deliveries/${id}/status`, data);
 
@@ -112,5 +115,38 @@ export const uploadImages = (files: File[], type: string) => {
     }
   });
 };
+
+// Audit
+export const getAuditLogs = (params?: any) =>
+  api.get('/audit', { params });
+
+export const getAuditLog = (id: string) =>
+  api.get(`/audit/${id}`);
+
+export const getEntityAuditLogs = (entity: string, entityId: string) =>
+  api.get(`/audit/entity/${entity}/${entityId}`);
+
+export const getAuditStats = (params?: any) =>
+  api.get('/audit/stats/summary', { params });
+
+// Reports
+export const getReportData = (params?: any) =>
+  api.get('/reports/data', { params });
+
+// Users
+export const getUsers = () =>
+  api.get('/users');
+
+export const createUser = (data: any) =>
+  api.post('/users', data);
+
+export const updateUser = (id: string, data: any) =>
+  api.put(`/users/${id}`, data);
+
+export const toggleUserStatus = (id: string, isActive: boolean) =>
+  api.put(`/users/${id}/status`, { isActive });
+
+export const resetUserPassword = (id: string, newPassword: string) =>
+  api.put(`/users/${id}/reset-password`, { newPassword });
 
 export default api;

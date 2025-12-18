@@ -110,6 +110,7 @@ router.post('/images', upload.array('images', 5), async (req: AuthRequest, res) 
 
     res.json({
       message: 'Images uploaded successfully',
+      urls: results.map(r => r.secure_url),
       images: urls
     });
   } catch (error: any) {

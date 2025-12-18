@@ -14,6 +14,9 @@ const deliveries_1 = __importDefault(require("./routes/deliveries"));
 const pettyCash_1 = __importDefault(require("./routes/pettyCash"));
 const tracking_1 = __importDefault(require("./routes/tracking"));
 const upload_1 = __importDefault(require("./routes/upload"));
+const audit_1 = __importDefault(require("./routes/audit"));
+const reports_1 = __importDefault(require("./routes/reports"));
+const users_1 = __importDefault(require("./routes/users"));
 const auth_2 = require("./middleware/auth");
 const errorHandler_1 = require("./middleware/errorHandler");
 (0, dotenv_1.config)();
@@ -43,6 +46,9 @@ app.use('/api/deliveries', auth_2.authenticateToken, deliveries_1.default);
 app.use('/api/petty-cash', auth_2.authenticateToken, pettyCash_1.default);
 app.use('/api/tracking', auth_2.authenticateToken, tracking_1.default);
 app.use('/api/upload', auth_2.authenticateToken, upload_1.default);
+app.use('/api/audit', auth_2.authenticateToken, audit_1.default);
+app.use('/api/reports', auth_2.authenticateToken, reports_1.default);
+app.use('/api/users', auth_2.authenticateToken, users_1.default);
 // WebSocket connection
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);

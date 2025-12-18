@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { logAudit } from '../middleware/audit';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -80,6 +81,18 @@ router.post('/login', async (req, res) => {
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
+
+    // Log successful login
+    await logAudit({
+      action: 'LOGIN',
+      entity: 'USER',
+      entityId: user.id,
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+      ipAddress: req.ip || req.socket.remoteAddress,
+      userAgent: req.get('user-agent')
+    });
 
     res.json({
       message: 'Login successful',

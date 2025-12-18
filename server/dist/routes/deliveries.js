@@ -3,31 +3,54 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const client_1 = require("@prisma/client");
 const whatsapp_1 = require("../services/whatsapp");
+const audit_1 = require("../middleware/audit");
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
 // Get all deliveries (with filters)
 router.get('/', async (req, res) => {
     try {
-        const { status, driverId, date } = req.query;
+        const { status, driverId, date, dateFrom, dateTo, priority } = req.query;
         const user = req.user;
         const where = {};
         if (user.role === 'DRIVER') {
             where.driverId = user.id;
         }
         else if (driverId) {
-            where.driverId = driverId;
+            if (driverId === 'unassigned') {
+                where.driverId = null;
+            }
+            else {
+                where.driverId = driverId;
+            }
         }
         if (status) {
             where.status = status;
         }
-        if (date) {
-            const startDate = new Date(date);
-            const endDate = new Date(startDate);
-            endDate.setDate(endDate.getDate() + 1);
-            where.createdAt = {
-                gte: startDate,
-                lt: endDate
-            };
+        if (priority) {
+            where.priority = priority;
+        }
+        // Handle date filtering
+        if (dateFrom || dateTo || date) {
+            where.createdAt = {};
+            if (date) {
+                // Single date filter (legacy support)
+                const startDate = new Date(date);
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 1);
+                where.createdAt.gte = startDate;
+                where.createdAt.lt = endDate;
+            }
+            else {
+                // Date range filter
+                if (dateFrom) {
+                    where.createdAt.gte = new Date(dateFrom);
+                }
+                if (dateTo) {
+                    const endDate = new Date(dateTo);
+                    endDate.setHours(23, 59, 59, 999); // End of day
+                    where.createdAt.lte = endDate;
+                }
+            }
         }
         const deliveries = await prisma.delivery.findMany({
             where,
@@ -127,10 +150,79 @@ router.post('/', async (req, res) => {
         res.status(500).json({ error: 'Failed to create delivery' });
     }
 });
+// Bulk create deliveries
+router.post('/bulk', async (req, res) => {
+    try {
+        const user = req.user;
+        if (user.role !== 'ADMIN') {
+            return res.status(403).json({ error: 'Only admins can create deliveries' });
+        }
+        const deliveries = req.body.deliveries;
+        if (!Array.isArray(deliveries) || deliveries.length === 0) {
+            return res.status(400).json({ error: 'Deliveries array is required' });
+        }
+        const results = { success: 0, failed: 0, errors: [] };
+        for (let i = 0; i < deliveries.length; i++) {
+            const delivery = deliveries[i];
+            try {
+                // Generate invoice number
+                const lastDelivery = await prisma.delivery.findFirst({
+                    orderBy: { createdAt: 'desc' }
+                });
+                const lastNumber = lastDelivery?.invoiceNumber
+                    ? parseInt(lastDelivery.invoiceNumber.replace('INV-', ''))
+                    : 0;
+                const invoiceNumber = `INV-${String(lastNumber + 1 + i).padStart(6, '0')}`;
+                await prisma.delivery.create({
+                    data: {
+                        invoiceNumber,
+                        customerName: delivery.customerName,
+                        customerPhone: delivery.customerPhone,
+                        address: delivery.address,
+                        latitude: delivery.latitude,
+                        longitude: delivery.longitude,
+                        proofImage: delivery.proofImage,
+                        signature: delivery.signature,
+                        customerNotes: delivery.customerNotes,
+                        driverId: delivery.driverId,
+                        status: 'PENDING'
+                    }
+                });
+                results.success++;
+                // Send WhatsApp notification to driver
+                if (delivery.driverId) {
+                    const driver = await prisma.user.findUnique({
+                        where: { id: delivery.driverId }
+                    });
+                    if (driver?.phone) {
+                        await (0, whatsapp_1.sendWhatsAppNotification)({
+                            to: driver.phone,
+                            message: `New delivery assigned!\n\nInvoice: ${invoiceNumber}\nCustomer: ${delivery.customerName}\nAddress: ${delivery.address}`,
+                            deliveryId: '',
+                            type: 'DELIVERY_ASSIGNED'
+                        });
+                    }
+                }
+            }
+            catch (error) {
+                results.failed++;
+                results.errors.push(`Row ${i + 1}: ${error.message || 'Unknown error'}`);
+            }
+        }
+        res.status(201).json({
+            message: `Bulk import complete: ${results.success} succeeded, ${results.failed} failed`,
+            results
+        });
+    }
+    catch (error) {
+        console.error('Bulk create error:', error);
+        res.status(500).json({ error: 'Failed to create deliveries' });
+    }
+});
 // Update delivery status
 router.put('/:id/status', async (req, res) => {
     try {
-        const { status, latitude, longitude, proofImage, signature, notes } = req.body;
+        const { status, latitude, longitude, accuracy, altitude, altitudeAccuracy, heading, speed, gpsTimestamp, isMockLocation, qualityScore, gpsWarnings, proofImage, signature, notes } = req.body;
         const user = req.user;
         const delivery = await prisma.delivery.findUnique({
             where: { id: req.params.id },
@@ -155,8 +247,44 @@ router.put('/:id/status', async (req, res) => {
             updateData.deliveredAt = new Date();
             updateData.latitude = latitude;
             updateData.longitude = longitude;
+            updateData.accuracy = accuracy;
+            updateData.altitude = altitude;
+            updateData.altitudeAccuracy = altitudeAccuracy;
+            updateData.heading = heading;
+            updateData.speed = speed;
+            updateData.gpsTimestamp = gpsTimestamp;
+            updateData.isMockLocation = isMockLocation || false;
+            updateData.qualityScore = qualityScore;
+            updateData.gpsWarnings = gpsWarnings;
             updateData.proofImage = proofImage;
             updateData.signature = signature;
+        }
+        else if (status === 'IN_TRANSIT') {
+            updateData.latitude = latitude;
+            updateData.longitude = longitude;
+            updateData.accuracy = accuracy;
+            updateData.altitude = altitude;
+            updateData.altitudeAccuracy = altitudeAccuracy;
+            updateData.heading = heading;
+            updateData.speed = speed;
+            updateData.gpsTimestamp = gpsTimestamp;
+            updateData.isMockLocation = isMockLocation || false;
+            updateData.qualityScore = qualityScore;
+            updateData.gpsWarnings = gpsWarnings;
+        }
+        else if (status === 'FAILED') {
+            updateData.failedAt = new Date();
+            updateData.latitude = latitude;
+            updateData.longitude = longitude;
+            updateData.accuracy = accuracy;
+            updateData.altitude = altitude;
+            updateData.altitudeAccuracy = altitudeAccuracy;
+            updateData.heading = heading;
+            updateData.speed = speed;
+            updateData.gpsTimestamp = gpsTimestamp;
+            updateData.isMockLocation = isMockLocation || false;
+            updateData.qualityScore = qualityScore;
+            updateData.gpsWarnings = gpsWarnings;
         }
         const updated = await prisma.delivery.update({
             where: { id: req.params.id },
@@ -195,6 +323,12 @@ router.put('/:id/status', async (req, res) => {
         if (updated.driverId) {
             io.to(`driver-${updated.driverId}`).emit('delivery-updated', updated);
         }
+        // Log audit
+        await (0, audit_1.logChange)('UPDATE_STATUS', 'DELIVERY', req.params.id, delivery, updated, {
+            id: user.id,
+            name: user.email,
+            role: user.role
+        }, req);
         res.json({ delivery: updated });
     }
     catch (error) {

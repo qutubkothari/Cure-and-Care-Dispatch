@@ -8,7 +8,7 @@ const prisma = new client_1.PrismaClient();
 router.post('/location', async (req, res) => {
     try {
         const user = req.user;
-        const { latitude, longitude, accuracy, speed, heading } = req.body;
+        const { latitude, longitude, accuracy, altitude, altitudeAccuracy, speed, heading, gpsTimestamp, isMockLocation, qualityScore } = req.body;
         if (!latitude || !longitude) {
             return res.status(400).json({ error: 'Latitude and longitude required' });
         }
@@ -18,8 +18,13 @@ router.post('/location', async (req, res) => {
                 latitude,
                 longitude,
                 accuracy,
+                altitude,
+                altitudeAccuracy,
                 speed,
-                heading
+                heading,
+                gpsTimestamp,
+                isMockLocation: isMockLocation || false,
+                qualityScore
             }
         });
         // Broadcast location to admin
@@ -29,8 +34,12 @@ router.post('/location', async (req, res) => {
             latitude,
             longitude,
             accuracy,
+            altitude,
             speed,
             heading,
+            gpsTimestamp,
+            isMockLocation,
+            qualityScore,
             timestamp: location.timestamp
         });
         res.json({ message: 'Location updated', location });

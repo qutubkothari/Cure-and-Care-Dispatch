@@ -226,7 +226,7 @@ class OfflineTrackingManager {
       if (this.isOnline) {
         this.syncQueuedLocations();
       }
-    }, 30000); // Every 30 seconds
+    }, 30000) as unknown as number; // Every 30 seconds
   }
 
   /**

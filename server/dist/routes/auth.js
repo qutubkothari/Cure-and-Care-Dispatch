@@ -7,6 +7,7 @@ const express_1 = require("express");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const client_1 = require("@prisma/client");
+const audit_1 = require("../middleware/audit");
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
 // Register
@@ -66,6 +67,17 @@ router.post('/login', async (req, res) => {
         const token = jsonwebtoken_1.default.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
         // Remove password from response
         const { password: _, ...userWithoutPassword } = user;
+        // Log successful login
+        await (0, audit_1.logAudit)({
+            action: 'LOGIN',
+            entity: 'USER',
+            entityId: user.id,
+            userId: user.id,
+            userName: user.name,
+            userRole: user.role,
+            ipAddress: req.ip || req.socket.remoteAddress,
+            userAgent: req.get('user-agent')
+        });
         res.json({
             message: 'Login successful',
             token,

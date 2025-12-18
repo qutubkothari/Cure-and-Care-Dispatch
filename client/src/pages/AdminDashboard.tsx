@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -20,10 +20,63 @@ import {
   Camera,
   FileText,
   AlertCircle,
-  Eye
+  Eye,
+  Upload
 } from 'lucide-react';
+import * as api from '../services/api';
+import BulkImportModal from '../components/BulkImportModal';
+import AuditLogViewer from '../components/AuditLogViewer';
+import FilterModal from '../components/FilterModal';
+import ReportGenerator from '../components/ReportGenerator';
+import UserManagement from '../components/UserManagement';
+import SyncStatusIndicator from '../components/SyncStatusIndicator';
 
-type Tab = 'dashboard' | 'deliveries' | 'drivers' | 'petty-cash' | 'tracking';
+type Tab = 'dashboard' | 'deliveries' | 'drivers' | 'petty-cash' | 'tracking' | 'audit' | 'reports' | 'users';
+
+interface Delivery {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerPhone: string;
+  address: string;
+  status: string;
+  driverId?: string;
+  driver?: Driver;
+  amount: number;
+  items: string;
+  proofUrl?: string;
+  proofUrls?: string[];
+  createdAt: string;
+  priority?: string;
+  failureReason?: string;
+  failureNotes?: string;
+  failurePhotoUrls?: string[];
+  accuracy?: number;
+  isMockLocation?: boolean;
+  qualityScore?: number;
+  gpsWarnings?: string;
+}
+
+interface Driver {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  isActive: boolean;
+}
+
+interface PettyCash {
+  id: string;
+  amount: number;
+  category: string;
+  description: string;
+  status: string;
+  receiptUrl?: string;
+  userId: string;
+  user?: { name: string };
+  createdAt: string;
+  approvalNotes?: string;
+}
 
 export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,174 +85,181 @@ export default function AdminDashboard() {
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [showNewDeliveryModal, setShowNewDeliveryModal] = useState(false);
+  const [selectedDeliveryForProof, setSelectedDeliveryForProof] = useState<Delivery | null>(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [pettyCash, setPettyCash] = useState<PettyCash[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [filters, setFilters] = useState({
+    status: '',
+    driverId: '',
+    dateFrom: '',
+    dateTo: '',
+    priority: ''
+  });
   const [newDelivery, setNewDelivery] = useState({
-    customer: '',
-    phone: '',
+    customerName: '',
+    customerPhone: '',
     address: '',
     items: '',
     amount: '',
-    driver: '',
-    priority: 'normal'
+    driverId: '',
+    priority: 'NORMAL'
   });
 
-  // Mock Data
+  useEffect(() => {
+    loadData();
+  }, [activeTab, filters]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'deliveries' || activeTab === 'dashboard') {
+        const response = await api.getDeliveries(filters);
+        setDeliveries(response.data);
+        
+        // Extract unique drivers from deliveries
+        const uniqueDrivers: Driver[] = [];
+        const driverIds = new Set<string>();
+        response.data.forEach((delivery: Delivery) => {
+          if (delivery.driver && !driverIds.has(delivery.driver.id)) {
+            driverIds.add(delivery.driver.id);
+            uniqueDrivers.push(delivery.driver);
+          }
+        });
+        setDrivers(uniqueDrivers);
+      }
+      if (activeTab === 'drivers') {
+        // Get all deliveries to extract drivers
+        const response = await api.getDeliveries();
+        const uniqueDrivers: Driver[] = [];
+        const driverIds = new Set<string>();
+        response.data.forEach((delivery: Delivery) => {
+          if (delivery.driver && !driverIds.has(delivery.driver.id)) {
+            driverIds.add(delivery.driver.id);
+            uniqueDrivers.push(delivery.driver);
+          }
+        });
+        setDrivers(uniqueDrivers);
+      }
+      if (activeTab === 'petty-cash' || activeTab === 'dashboard') {
+        const response = await api.getPettyCash();
+        setPettyCash(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateDelivery = async () => {
+    try {
+      setLoading(true);
+      await api.createDelivery({
+        invoiceNumber: `INV-${Date.now()}`,
+        ...newDelivery,
+        amount: parseFloat(newDelivery.amount),
+        status: 'PENDING'
+      });
+      setShowNewDeliveryModal(false);
+      setNewDelivery({
+        customerName: '',
+        customerPhone: '',
+        address: '',
+        items: '',
+        amount: '',
+        driverId: '',
+        priority: 'NORMAL'
+      });
+      loadData();
+      alert('✓ Delivery created successfully!');
+    } catch (error) {
+      console.error('Failed to create delivery:', error);
+      alert('Failed to create delivery. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprovePettyCash = async (id: string) => {
+    const notes = prompt('Add approval notes (optional):');
+    try {
+      await api.updatePettyCashStatus(id, 'APPROVED', notes || undefined);
+      loadData();
+      alert('✓ Petty cash approved!');
+    } catch (error) {
+      console.error('Failed to approve:', error);
+      alert('Failed to approve. Please try again.');
+    }
+  };
+
+  const handleRejectPettyCash = async (id: string) => {
+    const reason = prompt('Enter rejection reason (required):');
+    if (!reason || !reason.trim()) {
+      alert('Rejection reason is required');
+      return;
+    }
+    try {
+      await api.updatePettyCashStatus(id, 'REJECTED', reason);
+      loadData();
+      alert('✓ Petty cash rejected!');
+    } catch (error) {
+      console.error('Failed to reject:', error);
+      alert('Failed to reject. Please try again.');
+    }
+  };
+
+  const handleBulkImport = async (deliveriesData: any[]) => {
+    try {
+      const response = await api.bulkCreateDeliveries(deliveriesData);
+      await loadData();
+      return response.data.results;
+    } catch (error: any) {
+      console.error('Bulk import error:', error);
+      return {
+        success: 0,
+        failed: deliveriesData.length,
+        errors: [error.response?.data?.error || error.message || 'Unknown error']
+      };
+    }
+  };
+
+  // Calculate stats from real data
   const stats = [
-    { label: 'Total Deliveries', value: '248', icon: Package, color: 'text-primary-600', bg: 'bg-primary-100', trend: '+12%' },
-    { label: 'Completed Today', value: '42', icon: CheckCircle, color: 'text-accent-600', bg: 'bg-accent-100', trend: '+8%' },
-    { label: 'Active Drivers', value: '8', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100', trend: '100%' },
-    { label: 'Pending Petty Cash', value: '₹12,450', icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-100', trend: '-5%' },
-  ];
-
-  const deliveries = [
     { 
-      id: 'INV-001', 
-      customer: 'Apollo Pharmacy', 
-      phone: '+91 98765 43210',
-      address: 'Shop 12, Andheri East, Mumbai - 400069',
-      driver: 'Rajesh Kumar', 
-      status: 'Delivered', 
-      time: '10:30 AM',
-      amount: '₹2,450',
-      items: '15 items',
-      proof: true
+      label: 'Total Deliveries', 
+      value: deliveries.length.toString(), 
+      icon: Package, 
+      color: 'text-primary-600', 
+      bg: 'bg-primary-100', 
+      trend: '+12%' 
     },
     { 
-      id: 'INV-002', 
-      customer: 'Care Pharmacy', 
-      phone: '+91 98765 43211',
-      address: 'Main Road, Bandra West, Mumbai - 400050',
-      driver: 'Amit Sharma', 
-      status: 'In Transit', 
-      time: '11:15 AM',
-      amount: '₹1,850',
-      items: '8 items',
-      proof: false
+      label: 'Completed Today', 
+      value: deliveries.filter(d => d.status === 'DELIVERED').length.toString(), 
+      icon: CheckCircle, 
+      color: 'text-accent-600', 
+      bg: 'bg-accent-100', 
+      trend: '+8%' 
     },
     { 
-      id: 'INV-003', 
-      customer: 'Health Plus', 
-      phone: '+91 98765 43212',
-      address: 'Station Road, Powai, Mumbai - 400076',
-      driver: 'Suresh Patil', 
-      status: 'Delivered', 
-      time: '09:45 AM',
-      amount: '₹3,200',
-      items: '22 items',
-      proof: true
+      label: 'Active Drivers', 
+      value: drivers.filter(d => d.isActive).length.toString(), 
+      icon: Users, 
+      color: 'text-blue-600', 
+      bg: 'bg-blue-100', 
+      trend: '100%' 
     },
     { 
-      id: 'INV-004', 
-      customer: 'MedPlus Pharmacy', 
-      phone: '+91 98765 43213',
-      address: 'Market Street, Goregaon, Mumbai - 400063',
-      driver: 'Vikram Singh', 
-      status: 'Pending', 
-      time: '12:00 PM',
-      amount: '₹980',
-      items: '5 items',
-      proof: false
-    },
-    { 
-      id: 'INV-005', 
-      customer: 'Wellness Chemist', 
-      phone: '+91 98765 43214',
-      address: 'Link Road, Malad, Mumbai - 400064',
-      driver: 'Pradeep Yadav', 
-      status: 'In Transit', 
-      time: '12:30 PM',
-      amount: '₹4,120',
-      items: '18 items',
-      proof: false
-    },
-  ];
-
-  const drivers = [
-    { 
-      id: 'DRV-001', 
-      name: 'Rajesh Kumar', 
-      phone: '+91 98765 11111',
-      email: 'rajesh@cure.com',
-      status: 'Active', 
-      deliveries: 42, 
-      rating: 4.8,
-      vehicle: 'MH 02 AB 1234',
-      location: 'Andheri East'
-    },
-    { 
-      id: 'DRV-002', 
-      name: 'Amit Sharma', 
-      phone: '+91 98765 22222',
-      email: 'amit@cure.com',
-      status: 'Active', 
-      deliveries: 38, 
-      rating: 4.9,
-      vehicle: 'MH 02 CD 5678',
-      location: 'Bandra West'
-    },
-    { 
-      id: 'DRV-003', 
-      name: 'Suresh Patil', 
-      phone: '+91 98765 33333',
-      email: 'suresh@cure.com',
-      status: 'Active', 
-      deliveries: 45, 
-      rating: 4.7,
-      vehicle: 'MH 02 EF 9012',
-      location: 'Powai'
-    },
-    { 
-      id: 'DRV-004', 
-      name: 'Vikram Singh', 
-      phone: '+91 98765 44444',
-      email: 'vikram@cure.com',
-      status: 'Active', 
-      deliveries: 35, 
-      rating: 4.6,
-      vehicle: 'MH 02 GH 3456',
-      location: 'Goregaon'
-    },
-  ];
-
-  const pettyCashRequests = [
-    {
-      id: 'PC-001',
-      driver: 'Rajesh Kumar',
-      amount: '₹500',
-      category: 'Fuel',
-      description: 'Petrol for deliveries',
-      date: '15 Dec 2025',
-      status: 'Pending',
-      receipt: true
-    },
-    {
-      id: 'PC-002',
-      driver: 'Amit Sharma',
-      amount: '₹200',
-      category: 'Parking',
-      description: 'Parking charges at mall',
-      date: '15 Dec 2025',
-      status: 'Approved',
-      receipt: true
-    },
-    {
-      id: 'PC-003',
-      driver: 'Suresh Patil',
-      amount: '₹150',
-      category: 'Toll',
-      description: 'Highway toll charges',
-      date: '14 Dec 2025',
-      status: 'Approved',
-      receipt: true
-    },
-    {
-      id: 'PC-004',
-      driver: 'Vikram Singh',
-      amount: '₹300',
-      category: 'Maintenance',
-      description: 'Vehicle minor repair',
-      date: '14 Dec 2025',
-      status: 'Rejected',
-      receipt: false
+      label: 'Pending Petty Cash', 
+      value: `₹${pettyCash.filter(p => p.status === 'PENDING').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}`, 
+      icon: DollarSign, 
+      color: 'text-amber-600', 
+      bg: 'bg-amber-100', 
+      trend: '-5%' 
     },
   ];
 
@@ -300,29 +360,37 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {deliveries.slice(0, 5).map((delivery) => (
-                      <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{delivery.id}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{delivery.customer}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{delivery.driver}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                            delivery.status === 'Delivered' 
-                              ? 'bg-accent-100 text-accent-700'
-                              : delivery.status === 'In Transit'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {delivery.status === 'Delivered' && <CheckCircle className="w-3 h-3" />}
-                            {delivery.status === 'In Transit' && <MapPin className="w-3 h-3" />}
-                            {delivery.status === 'Pending' && <Clock className="w-3 h-3" />}
-                            {delivery.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">{delivery.amount}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{delivery.time}</td>
-                      </tr>
-                    ))}
+                    {loading ? (
+                      <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading...</td></tr>
+                    ) : deliveries.length === 0 ? (
+                      <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No deliveries found</td></tr>
+                    ) : (
+                      deliveries.slice(0, 5).map((delivery) => (
+                        <tr key={delivery.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{delivery.invoiceNumber}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-600">{delivery.customerName}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-600">{delivery.driver?.name || 'Unassigned'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                              delivery.status === 'DELIVERED' 
+                                ? 'bg-accent-100 text-accent-700'
+                                : delivery.status === 'IN_TRANSIT'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {delivery.status === 'DELIVERED' && <CheckCircle className="w-3 h-3" />}
+                              {delivery.status === 'IN_TRANSIT' && <MapPin className="w-3 h-3" />}
+                              {delivery.status === 'PENDING' && <Clock className="w-3 h-3" />}
+                              {delivery.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">₹{delivery.amount.toLocaleString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                            {new Date(delivery.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -348,9 +416,25 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex gap-3">
                   {/* Filter Button - White background with border */}
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium" title="Filter deliveries">
+                  <button 
+                    onClick={() => setShowFilterModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium" 
+                    title="Filter deliveries"
+                  >
                     <Filter className="w-4 h-4" />
                     Filter
+                    {(filters.status || filters.driverId || filters.dateFrom || filters.dateTo || filters.priority) && (
+                      <span className="ml-1 w-2 h-2 bg-primary-600 rounded-full"></span>
+                    )}
+                  </button>
+                  {/* Bulk Import Button */}
+                  <button
+                    onClick={() => setShowBulkImportModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 font-medium"
+                    title="Bulk import deliveries from CSV"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Import
                   </button>
                   {/* New Delivery Button - Opens form (coming soon) */}
                   <button 
@@ -367,74 +451,104 @@ export default function AdminDashboard() {
 
             {/* Deliveries List */}
             <div className="grid grid-cols-1 gap-4">
-              {deliveries.map((delivery) => (
-                <div key={delivery.id} className="bg-white rounded-xl shadow-soft p-6 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{delivery.id}</h3>
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
-                          delivery.status === 'Delivered' 
-                            ? 'bg-accent-100 text-accent-700'
-                            : delivery.status === 'In Transit'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {delivery.status === 'Delivered' && <CheckCircle className="w-3 h-3" />}
-                          {delivery.status === 'In Transit' && <MapPin className="w-3 h-3" />}
-                          {delivery.status === 'Pending' && <Clock className="w-3 h-3" />}
-                          {delivery.status}
-                        </span>
-                      </div>
-                      <h4 className="font-medium text-gray-900 mb-1">{delivery.customer}</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <p className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          {delivery.address}
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          {delivery.phone}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900 mb-1">{delivery.amount}</p>
-                      <p className="text-sm text-gray-600">{delivery.items}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                          {delivery.driver.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{delivery.driver}</p>
-                          <p className="text-xs text-gray-500">{delivery.time}</p>
-                        </div>
-                      </div>
-                      {delivery.proof && (
-                        <span className="flex items-center gap-1 text-xs text-accent-600 bg-accent-50 px-2 py-1 rounded">
-                          <Camera className="w-3 h-3" />
-                          Proof Available
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium">
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
-                      <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
-                        <Navigation className="w-4 h-4" />
-                        Track
-                      </button>
-                    </div>
-                  </div>
+              {loading ? (
+                <div className="bg-white rounded-xl shadow-soft p-12 text-center text-gray-500">
+                  Loading deliveries...
                 </div>
-              ))}
+              ) : deliveries.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-soft p-12 text-center text-gray-500">
+                  No deliveries found
+                </div>
+              ) : (
+                deliveries.map((delivery) => (
+                  <div key={delivery.id} className="bg-white rounded-xl shadow-soft p-6 hover:shadow-lg transition-all">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900">{delivery.invoiceNumber}</h3>
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                            delivery.status === 'DELIVERED' 
+                              ? 'bg-accent-100 text-accent-700'
+                              : delivery.status === 'IN_TRANSIT'
+                              ? 'bg-blue-100 text-blue-700'
+                              : delivery.status === 'FAILED'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {delivery.status === 'DELIVERED' && <CheckCircle className="w-3 h-3" />}
+                            {delivery.status === 'IN_TRANSIT' && <MapPin className="w-3 h-3" />}
+                            {delivery.status === 'FAILED' && <AlertCircle className="w-3 h-3" />}
+                            {delivery.status === 'PENDING' && <Clock className="w-3 h-3" />}
+                            {delivery.status}
+                          </span>
+                          {delivery.priority === 'HIGH' && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                              <AlertCircle className="w-3 h-3" />
+                              High Priority
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="font-medium text-gray-900 mb-1">{delivery.customerName}</h4>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          <p className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            {delivery.address}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            {delivery.customerPhone}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-gray-900 mb-1">₹{delivery.amount.toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">{delivery.items || 'Various items'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            {delivery.driver ? delivery.driver.name.split(' ').map(n => n[0]).join('') : '?'}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{delivery.driver?.name || 'Unassigned'}</p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(delivery.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                        {delivery.proofUrl && (
+                          <span className="flex items-center gap-1 text-xs text-accent-600 bg-accent-50 px-2 py-1 rounded">
+                            <Camera className="w-3 h-3" />
+                            Proof Available
+                          </span>
+                        )}
+                        {delivery.status === 'FAILED' && delivery.failureReason && (
+                          <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+                            <AlertCircle className="w-3 h-3" />
+                            {delivery.failureReason}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setSelectedDeliveryForProof(delivery)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </button>
+                        <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
+                          <Navigation className="w-4 h-4" />
+                          Track
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         );
@@ -444,62 +558,68 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             {/* Drivers Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {drivers.map((driver) => (
-                <div key={driver.id} className="bg-white rounded-xl shadow-soft p-6 hover:shadow-lg transition-all">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
-                        {driver.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{driver.name}</h3>
-                        <p className="text-xs text-gray-500">{driver.id}</p>
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      driver.status === 'Active' 
-                        ? 'bg-accent-100 text-accent-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {driver.status}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <p className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="w-4 h-4" />
-                      {driver.phone}
-                    </p>
-                    <p className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="w-4 h-4" />
-                      {driver.email}
-                    </p>
-                    <p className="flex items-center gap-2 text-sm text-gray-600">
-                      <Package className="w-4 h-4" />
-                      {driver.vehicle}
-                    </p>
-                    <p className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      {driver.location}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{driver.deliveries}</p>
-                      <p className="text-xs text-gray-600">Deliveries</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-amber-600">⭐ {driver.rating}</p>
-                      <p className="text-xs text-gray-600">Rating</p>
-                    </div>
-                  </div>
-
-                  <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-medium text-sm">
-                    View Details
-                  </button>
+              {loading ? (
+                <div className="col-span-full bg-white rounded-xl shadow-soft p-12 text-center text-gray-500">
+                  Loading drivers...
                 </div>
-              ))}
+              ) : drivers.length === 0 ? (
+                <div className="col-span-full bg-white rounded-xl shadow-soft p-12 text-center text-gray-500">
+                  No drivers found
+                </div>
+              ) : (
+                drivers.map((driver) => (
+                  <div key={driver.id} className="bg-white rounded-xl shadow-soft p-6 hover:shadow-lg transition-all">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
+                          {driver.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{driver.name}</h3>
+                          <p className="text-xs text-gray-500">ID: {driver.id}</p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        driver.isActive 
+                          ? 'bg-accent-100 text-accent-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {driver.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <p className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="w-4 h-4" />
+                        {driver.phone || 'N/A'}
+                      </p>
+                      <p className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="w-4 h-4" />
+                        {driver.email}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900">
+                          {deliveries.filter(d => d.driverId === driver.id).length}
+                        </p>
+                        <p className="text-xs text-gray-600">Deliveries</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-accent-600">
+                          {deliveries.filter(d => d.driverId === driver.id && d.status === 'DELIVERED').length}
+                        </p>
+                        <p className="text-xs text-gray-600">Completed</p>
+                      </div>
+                    </div>
+
+                    <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-medium text-sm">
+                      View Details
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Add Driver Button */}
@@ -524,8 +644,12 @@ export default function AdminDashboard() {
                   </div>
                   <h3 className="font-semibold text-gray-900">Pending</h3>
                 </div>
-                <p className="text-3xl font-bold text-amber-600">₹12,450</p>
-                <p className="text-sm text-gray-600 mt-1">15 requests</p>
+                <p className="text-3xl font-bold text-amber-600">
+                  ₹{pettyCash.filter(p => p.status === 'PENDING').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {pettyCash.filter(p => p.status === 'PENDING').length} requests
+                </p>
               </div>
               <div className="bg-white rounded-xl shadow-soft p-6">
                 <div className="flex items-center gap-3 mb-2">
@@ -534,8 +658,12 @@ export default function AdminDashboard() {
                   </div>
                   <h3 className="font-semibold text-gray-900">Approved</h3>
                 </div>
-                <p className="text-3xl font-bold text-accent-600">₹48,200</p>
-                <p className="text-sm text-gray-600 mt-1">This month</p>
+                <p className="text-3xl font-bold text-accent-600">
+                  ₹{pettyCash.filter(p => p.status === 'APPROVED').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {pettyCash.filter(p => p.status === 'APPROVED').length} requests
+                </p>
               </div>
               <div className="bg-white rounded-xl shadow-soft p-6">
                 <div className="flex items-center gap-3 mb-2">
@@ -544,8 +672,12 @@ export default function AdminDashboard() {
                   </div>
                   <h3 className="font-semibold text-gray-900">Rejected</h3>
                 </div>
-                <p className="text-3xl font-bold text-red-600">₹2,800</p>
-                <p className="text-sm text-gray-600 mt-1">8 requests</p>
+                <p className="text-3xl font-bold text-red-600">
+                  ₹{pettyCash.filter(p => p.status === 'REJECTED').reduce((sum, p) => sum + p.amount, 0).toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {pettyCash.filter(p => p.status === 'REJECTED').length} requests
+                </p>
               </div>
             </div>
 
@@ -555,53 +687,96 @@ export default function AdminDashboard() {
                 <h2 className="text-lg font-semibold text-gray-900">Petty Cash Requests</h2>
               </div>
               <div className="divide-y divide-gray-200">
-                {pettyCashRequests.map((request) => (
-                  <div key={request.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-gray-900">{request.id}</h3>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            request.status === 'Approved'
-                              ? 'bg-accent-100 text-accent-700'
-                              : request.status === 'Pending'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {request.status}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-1">{request.driver}</p>
-                        <p className="text-sm text-gray-900 mb-1">
-                          <span className="font-medium">{request.category}:</span> {request.description}
-                        </p>
-                        <p className="text-xs text-gray-500">{request.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900 mb-2">{request.amount}</p>
-                        {request.receipt && (
-                          <span className="inline-flex items-center gap-1 text-xs text-primary-600">
-                            <FileText className="w-3 h-3" />
-                            Receipt
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {request.status === 'Pending' && (
-                      <div className="flex gap-3 pt-4 border-t">
-                        <button className="flex-1 px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 font-medium">
-                          Approve
-                        </button>
-                        <button className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
-                          Reject
-                        </button>
-                        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                          <Eye className="w-5 h-5 text-gray-600" />
-                        </button>
-                      </div>
-                    )}
+                {loading ? (
+                  <div className="p-12 text-center text-gray-500">
+                    Loading petty cash requests...
                   </div>
-                ))}
+                ) : pettyCash.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500">
+                    No petty cash requests found
+                  </div>
+                ) : (
+                  pettyCash.map((request) => (
+                    <div key={request.id} className="p-6 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-gray-900">PC-{request.id}</h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              request.status === 'APPROVED'
+                                ? 'bg-accent-100 text-accent-700'
+                                : request.status === 'PENDING'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {request.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{request.user?.name || 'Unknown User'}</p>
+                          <p className="text-sm text-gray-900 mb-1">
+                            <span className="font-medium">{request.category}:</span> {request.description}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(request.createdAt).toLocaleDateString('en-IN', { 
+                              day: 'numeric', 
+                              month: 'short', 
+                              year: 'numeric' 
+                            })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-gray-900 mb-2">₹{request.amount.toLocaleString()}</p>
+                          {request.receiptUrl && (
+                            <a 
+                              href={request.receiptUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700"
+                            >
+                              <FileText className="w-3 h-3" />
+                              View Receipt
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      {request.approvalNotes && (
+                        <div className="pt-3 border-t">
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Notes:</span> {request.approvalNotes}
+                          </p>
+                        </div>
+                      )}
+                      {request.status === 'PENDING' && (
+                        <div className="flex gap-3 pt-4 border-t">
+                          <button 
+                            onClick={() => handleApprovePettyCash(request.id)}
+                            disabled={loading}
+                            className="flex-1 px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-700 font-medium disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleRejectPettyCash(request.id)}
+                            disabled={loading}
+                            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                          {request.receiptUrl && (
+                            <a
+                              href={request.receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                            >
+                              <Eye className="w-5 h-5 text-gray-600" />
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -667,7 +842,7 @@ export default function AdminDashboard() {
                     </svg>
 
                     {/* Driver Markers */}
-                    {drivers.filter(d => d.status === 'Active').map((driver, idx) => {
+                    {drivers.filter(d => d.isActive).map((driver, idx) => {
                       const positions = [
                         { top: '15%', left: '20%' },
                         { top: '45%', left: '60%' },
@@ -704,8 +879,8 @@ export default function AdminDashboard() {
                           {isSelected && (
                             <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl p-3 whitespace-nowrap animate-fade-in z-30">
                               <div className="text-xs font-semibold text-gray-900">{driver.name}</div>
-                              <div className="text-xs text-gray-600">{driver.vehicle}</div>
-                              <div className="text-xs text-primary-600 mt-1">📍 {driver.location}</div>
+                              <div className="text-xs text-gray-600">{driver.email}</div>
+                              <div className="text-xs text-primary-600 mt-1">📍 Active Delivery</div>
                               <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white rotate-45"></div>
                             </div>
                           )}
@@ -724,12 +899,12 @@ export default function AdminDashboard() {
                             <div className="text-sm font-semibold text-gray-900">
                               {selectedDriver 
                                 ? `Tracking: ${drivers.find(d => d.id === selectedDriver)?.name}`
-                                : `${drivers.filter(d => d.status === 'Active').length} Active Drivers`
+                                : `${drivers.filter(d => d.isActive).length} Active Drivers`
                               }
                             </div>
                             <div className="text-xs text-gray-600">
                               {selectedDriver
-                                ? drivers.find(d => d.id === selectedDriver)?.location
+                                ? drivers.find(d => d.id === selectedDriver)?.email
                                 : 'Click on a marker to view details'
                               }
                             </div>
@@ -763,7 +938,7 @@ export default function AdminDashboard() {
 
             {/* Active Drivers List */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {drivers.filter(d => d.status === 'Active').map((driver) => (
+              {drivers.filter(d => d.isActive).map((driver) => (
                 <div 
                   key={driver.id} 
                   className={`bg-white rounded-xl shadow-soft p-6 transition-all ${
@@ -780,7 +955,7 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{driver.name}</h3>
-                        <p className="text-xs text-gray-500">{driver.vehicle}</p>
+                        <p className="text-xs text-gray-500">{driver.email}</p>
                       </div>
                     </div>
                     <button 
@@ -799,12 +974,14 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Current Location</span>
-                      <span className="font-medium text-gray-900">{driver.location}</span>
+                      <span className="text-gray-600">Phone</span>
+                      <span className="font-medium text-gray-900">{driver.phone || 'N/A'}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Active Deliveries</span>
-                      <span className="font-medium text-gray-900">3 pending</span>
+                      <span className="font-medium text-gray-900">
+                        {deliveries.filter(d => d.driverId === driver.id && d.status === 'IN_TRANSIT').length} pending
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Last Update</span>
@@ -816,6 +993,15 @@ export default function AdminDashboard() {
             </div>
           </div>
         );
+
+      case 'audit':
+        return <AuditLogViewer />;
+
+      case 'reports':
+        return <ReportGenerator drivers={drivers} />;
+
+      case 'users':
+        return <UserManagement />;
 
       default:
         return null;
@@ -904,6 +1090,39 @@ export default function AdminDashboard() {
             <MapPin className="w-5 h-5" />
             <span>Live Tracking</span>
           </button>
+          <button
+            onClick={() => setActiveTab('audit')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
+              activeTab === 'audit'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
+            }`}
+          >
+            <FileText className="w-5 h-5" />
+            <span>Audit Logs</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
+              activeTab === 'reports'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
+            }`}
+          >
+            <TrendingUp className="w-5 h-5" />
+            <span>Reports</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
+              activeTab === 'users'
+                ? 'bg-gradient-to-r from-primary-500 to-accent-500 text-white shadow-lg'
+                : 'bg-gray-50 text-gray-800 hover:bg-gradient-to-r hover:from-primary-100 hover:to-accent-100 hover:text-primary-700'
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            <span>User Management</span>
+          </button>
         </nav>
 
         {/* Logout Button */}
@@ -942,6 +1161,7 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-gray-900">Admin User</p>
                 <p className="text-xs text-gray-500">admin@cure.com</p>
               </div>
+              <SyncStatusIndicator onSyncComplete={loadData} />
               <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-primary-200">
                 A
               </div>
@@ -993,8 +1213,8 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="text"
-                      value={newDelivery.customer}
-                      onChange={(e) => setNewDelivery({...newDelivery, customer: e.target.value})}
+                      value={newDelivery.customerName}
+                      onChange={(e) => setNewDelivery({...newDelivery, customerName: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="Enter customer name"
                       required
@@ -1006,8 +1226,8 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="tel"
-                      value={newDelivery.phone}
-                      onChange={(e) => setNewDelivery({...newDelivery, phone: e.target.value})}
+                      value={newDelivery.customerPhone}
+                      onChange={(e) => setNewDelivery({...newDelivery, customerPhone: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       placeholder="+91 98765 43210"
                       required
@@ -1067,16 +1287,15 @@ export default function AdminDashboard() {
                       Assign Driver *
                     </label>
                     <select
-                      value={newDelivery.driver}
-                      onChange={(e) => setNewDelivery({...newDelivery, driver: e.target.value})}
+                      value={newDelivery.driverId}
+                      onChange={(e) => setNewDelivery({...newDelivery, driverId: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                       required
                     >
                       <option value="">Select driver</option>
-                      <option value="Rajesh Kumar">Rajesh Kumar</option>
-                      <option value="Amit Sharma">Amit Sharma</option>
-                      <option value="Suresh Patil">Suresh Patil</option>
-                      <option value="Vikram Singh">Vikram Singh</option>
+                      {drivers.map(driver => (
+                        <option key={driver.id} value={driver.id}>{driver.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -1088,8 +1307,8 @@ export default function AdminDashboard() {
                       onChange={(e) => setNewDelivery({...newDelivery, priority: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
-                      <option value="normal">Normal</option>
-                      <option value="high">High Priority</option>
+                      <option value="NORMAL">Normal</option>
+                      <option value="HIGH">High Priority</option>
                     </select>
                   </div>
                 </div>
@@ -1105,27 +1324,223 @@ export default function AdminDashboard() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // Here you would normally send the data to your backend
-                  alert('Delivery created successfully! (In production, this would save to database)');
-                  setShowNewDeliveryModal(false);
-                  setNewDelivery({
-                    customer: '',
-                    phone: '',
-                    address: '',
-                    items: '',
-                    amount: '',
-                    driver: '',
-                    priority: 'normal'
-                  });
-                }}
-                className="px-6 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold shadow-lg transition-all hover:scale-105"
+                onClick={handleCreateDelivery}
+                disabled={loading}
+                className="px-6 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-semibold shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Create Delivery
+                {loading ? 'Creating...' : 'Create Delivery'}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Proof Viewer Modal */}
+      {selectedDeliveryForProof && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold">Delivery Details</h2>
+                <p className="text-sm text-gray-600">{selectedDeliveryForProof.invoiceNumber}</p>
+              </div>
+              <button
+                onClick={() => setSelectedDeliveryForProof(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* Delivery Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Customer</p>
+                  <p className="font-semibold">{selectedDeliveryForProof.customerName}</p>
+                  <p className="text-sm text-gray-600">{selectedDeliveryForProof.customerPhone}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Amount</p>
+                  <p className="text-2xl font-bold text-accent-600">
+                    ₹{selectedDeliveryForProof.amount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">Address</p>
+                  <p className="font-medium">{selectedDeliveryForProof.address}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Status</p>
+                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${
+                    selectedDeliveryForProof.status === 'DELIVERED' 
+                      ? 'bg-accent-100 text-accent-700'
+                      : selectedDeliveryForProof.status === 'IN_TRANSIT'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {selectedDeliveryForProof.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Driver</p>
+                  <p className="font-medium">{selectedDeliveryForProof.driver?.name || 'Unassigned'}</p>
+                </div>
+              </div>
+
+              {/* GPS Quality Indicator */}
+              {selectedDeliveryForProof.qualityScore !== undefined && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Navigation className="w-5 h-5 text-blue-600" />
+                    GPS Data Quality
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-600">Quality Score</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                          selectedDeliveryForProof.qualityScore >= 80 ? 'bg-green-100 text-green-700' :
+                          selectedDeliveryForProof.qualityScore >= 60 ? 'bg-blue-100 text-blue-700' :
+                          selectedDeliveryForProof.qualityScore >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          {selectedDeliveryForProof.qualityScore}/100
+                        </span>
+                      </div>
+                    </div>
+                    {selectedDeliveryForProof.accuracy !== undefined && (
+                      <div>
+                        <p className="text-xs text-gray-600">GPS Accuracy</p>
+                        <p className="font-medium mt-1">±{selectedDeliveryForProof.accuracy.toFixed(1)}m</p>
+                      </div>
+                    )}
+                  </div>
+                  {selectedDeliveryForProof.isMockLocation && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-red-900">Mock Location Detected</p>
+                        <p className="text-xs text-red-700 mt-1">This GPS data may have been spoofed</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedDeliveryForProof.gpsWarnings && (
+                    <div className="mt-2 text-xs text-gray-600">
+                      <p className="font-medium">Warnings:</p>
+                      <ul className="list-disc list-inside mt-1 space-y-0.5">
+                        {selectedDeliveryForProof.gpsWarnings.split('; ').map((warning, idx) => (
+                          <li key={idx}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Proof Photos */}
+              {(selectedDeliveryForProof.proofUrls && selectedDeliveryForProof.proofUrls.length > 0) || selectedDeliveryForProof.proofUrl ? (
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-accent-600" />
+                    Proof of Delivery
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {(selectedDeliveryForProof.proofUrls || [selectedDeliveryForProof.proofUrl]).map((url, index) => (
+                      url && (
+                        <a
+                          key={index}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative aspect-square rounded-lg overflow-hidden hover:opacity-90 transition-opacity group"
+                        >
+                          <img
+                            src={url}
+                            alt={`Proof ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                            <Eye className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </a>
+                      )
+                    ))}
+                  </div>
+                </div>
+              ) : selectedDeliveryForProof.status === 'DELIVERED' ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600">No proof photos uploaded yet</p>
+                </div>
+              ) : null}
+
+              {/* Failed Delivery Details */}
+              {selectedDeliveryForProof.status === 'FAILED' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-800">
+                    <AlertCircle className="w-5 h-5" />
+                    Failure Details
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium text-red-900">Reason:</span>
+                      <span className="ml-2 text-red-700">{selectedDeliveryForProof.failureReason}</span>
+                    </div>
+                    {selectedDeliveryForProof.failureNotes && (
+                      <div>
+                        <span className="font-medium text-red-900">Notes:</span>
+                        <p className="mt-1 text-red-700">{selectedDeliveryForProof.failureNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                  {selectedDeliveryForProof.failurePhotoUrls && selectedDeliveryForProof.failurePhotoUrls.length > 0 && (
+                    <div className="mt-4">
+                      <p className="font-medium text-red-900 mb-2">Evidence Photos:</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {selectedDeliveryForProof.failurePhotoUrls.map((url, index) => (
+                          <a
+                            key={index}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="relative aspect-square rounded-lg overflow-hidden hover:opacity-90 transition-opacity"
+                          >
+                            <img
+                              src={url}
+                              alt={`Evidence ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {showBulkImportModal && (
+        <BulkImportModal
+          drivers={drivers}
+          onClose={() => setShowBulkImportModal(false)}
+          onImport={handleBulkImport}
+        />
+      )}
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <FilterModal
+          filters={filters}
+          drivers={drivers}
+          onClose={() => setShowFilterModal(false)}
+          onApply={(newFilters) => setFilters(newFilters)}
+          onClear={() => setFilters({ status: '', driverId: '', dateFrom: '', dateTo: '', priority: '' })}
+        />
       )}
     </div>
   );
