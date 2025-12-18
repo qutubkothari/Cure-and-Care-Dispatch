@@ -16,6 +16,25 @@ import { errorHandler } from './middleware/errorHandler';
 
 config();
 
+try {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    const parsed = new URL(databaseUrl);
+    console.log('DB config:', {
+      host: parsed.host,
+      database: parsed.pathname,
+      socketHost: parsed.searchParams.get('host')
+    });
+  } else {
+    console.warn('DB config: DATABASE_URL is not set');
+  }
+} catch (error) {
+  console.error('DB config: failed to parse DATABASE_URL', {
+    message: (error as any)?.message,
+    stack: (error as any)?.stack
+  });
+}
+
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
