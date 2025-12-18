@@ -1,6 +1,18 @@
 param(
   [Parameter(Mandatory = $false)]
-  [string]$BaseUrl = "https://care-and-cure-dispatch.uc.r.appspot.com"
+  [string]$BaseUrl = "https://care-and-cure-dispatch.uc.r.appspot.com",
+
+  [Parameter(Mandatory = $false)]
+  [string]$AdminEmail,
+
+  [Parameter(Mandatory = $false)]
+  [string]$AdminPassword,
+
+  [Parameter(Mandatory = $false)]
+  [string]$DriverEmail,
+
+  [Parameter(Mandatory = $false)]
+  [string]$DriverPassword
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,6 +29,60 @@ function Get-Status {
     }
     return [pscustomobject]@{ Url = $Url; Status = $status; Content = ""; Bytes = 0 }
   }
+}
+
+function Invoke-Json {
+  param(
+    [Parameter(Mandatory = $true)][string]$Method,
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $false)][hashtable]$Headers,
+    [Parameter(Mandatory = $false)]$Body
+  )
+
+  $uri = if ($Path.StartsWith('http')) { $Path } else { "$BaseUrl$Path" }
+  $params = @{
+    Uri = $uri
+    Method = $Method
+    UseBasicParsing = $true
+    MaximumRedirection = 5
+  }
+  if ($Headers) { $params.Headers = $Headers }
+  if ($null -ne $Body) {
+    $params.ContentType = 'application/json'
+    $params.Body = ($Body | ConvertTo-Json -Depth 12)
+  }
+  try {
+    return Invoke-RestMethod @params
+  } catch {
+    $status = $null
+    $respBody = $null
+    try {
+      if ($_.Exception.Response) {
+        $status = $_.Exception.Response.StatusCode.value__
+        $stream = $_.Exception.Response.GetResponseStream()
+        if ($stream) {
+          $reader = New-Object System.IO.StreamReader($stream)
+          $respBody = $reader.ReadToEnd()
+        }
+      }
+    } catch {
+      # ignore diagnostics failure
+    }
+    $msg = "API call failed: $Method $Path"
+    if ($status) { $msg += " (HTTP $status)" }
+    if ($respBody) { $msg += "`nResponse: $respBody" }
+    throw $msg
+  }
+}
+
+function Login-AndGetToken {
+  param(
+    [Parameter(Mandatory = $true)][string]$Email,
+    [Parameter(Mandatory = $true)][string]$Password
+  )
+  $resp = Invoke-Json -Method 'POST' -Path '/api/auth/login' -Body @{ email = $Email; password = $Password }
+  if (-not $resp.token) { throw "Login failed for $Email (no token in response)" }
+  return $resp
 }
 
 Write-Host "=== LIVE SMOKE TEST ===" -ForegroundColor Cyan
@@ -87,3 +153,112 @@ $del = Get-Status "$BaseUrl/api/deliveries"
 Write-Host "GET /api/deliveries (no token) => $($del.Status)" -ForegroundColor Cyan
 
 Write-Host "\nQC COMPLETE" -ForegroundColor Green
+
+$haveCreds = $AdminEmail -and $AdminPassword -and $DriverEmail -and $DriverPassword
+if (-not $haveCreds) {
+  Write-Host "\n(Auth deep QC skipped) Provide -AdminEmail/-AdminPassword/-DriverEmail/-DriverPassword to run it." -ForegroundColor Yellow
+  exit 0
+}
+
+Write-Host "\n=== DEEP QC (AUTHENTICATED) ===" -ForegroundColor Cyan
+Write-Host "Logging in as Admin + Driver..." -ForegroundColor Gray
+
+$adminLogin = $null
+$driverLogin = $null
+try {
+  $adminLogin = Login-AndGetToken -Email $AdminEmail -Password $AdminPassword
+  $driverLogin = Login-AndGetToken -Email $DriverEmail -Password $DriverPassword
+} catch {
+  Write-Host "AUTH QC RESULT: FAIL (login)" -ForegroundColor Red
+  throw
+}
+
+$adminToken = $adminLogin.token
+$driverToken = $driverLogin.token
+$adminUser = $adminLogin.user
+$driverUser = $driverLogin.user
+
+Write-Host ("Admin role: {0}  Driver role: {1}" -f $adminUser.role, $driverUser.role) -ForegroundColor Cyan
+if ($adminUser.role -ne 'ADMIN') { throw "Admin credentials did not return ADMIN role" }
+if ($driverUser.role -ne 'DRIVER') { throw "Driver credentials did not return DRIVER role" }
+
+$adminHeaders = @{ Authorization = "Bearer $adminToken" }
+$driverHeaders = @{ Authorization = "Bearer $driverToken" }
+
+Write-Host "Auth sanity: /api/auth/me" -ForegroundColor Cyan
+$meAdmin = Invoke-Json -Method 'GET' -Path '/api/auth/me' -Headers $adminHeaders
+$meDriver = Invoke-Json -Method 'GET' -Path '/api/auth/me' -Headers $driverHeaders
+if (-not $meAdmin.user.id) { throw "Admin /me missing user" }
+if (-not $meDriver.user.id) { throw "Driver /me missing user" }
+
+Write-Host "Admin checks: users, deliveries, petty cash stats, audit logs" -ForegroundColor Cyan
+$users = Invoke-Json -Method 'GET' -Path '/api/users' -Headers $adminHeaders
+Write-Host ("Users count: {0}" -f ($users | Measure-Object).Count) -ForegroundColor Gray
+
+$delResp = Invoke-Json -Method 'GET' -Path '/api/deliveries' -Headers $adminHeaders
+$delCount = ($delResp.deliveries | Measure-Object).Count
+Write-Host ("Deliveries count (admin): {0}" -f $delCount) -ForegroundColor Gray
+
+$pcStats = Invoke-Json -Method 'GET' -Path '/api/petty-cash/stats' -Headers $adminHeaders
+Write-Host ("Petty cash total amount: {0}" -f $pcStats.stats.total) -ForegroundColor Gray
+
+$audit = Invoke-Json -Method 'GET' -Path '/api/audit?limit=5&offset=0' -Headers $adminHeaders
+Write-Host ("Audit logs fetched: {0} / total: {1}" -f (($audit.logs | Measure-Object).Count), $audit.total) -ForegroundColor Gray
+
+Write-Host "Admin checks: reports (delivery-summary last 7 days)" -ForegroundColor Cyan
+$dateTo = (Get-Date).ToString('yyyy-MM-dd')
+$dateFrom = (Get-Date).AddDays(-7).ToString('yyyy-MM-dd')
+$report = Invoke-Json -Method 'GET' -Path "/api/reports/data?type=delivery-summary&dateFrom=$dateFrom&dateTo=$dateTo" -Headers $adminHeaders
+if (-not $report.summary) { throw "Report response missing summary" }
+Write-Host ("Report total deliveries: {0}" -f $report.summary.total) -ForegroundColor Gray
+
+Write-Host "Driver checks: deliveries + petty cash visibility" -ForegroundColor Cyan
+$driverDeliveries = Invoke-Json -Method 'GET' -Path '/api/deliveries' -Headers $driverHeaders
+Write-Host ("Deliveries visible to driver: {0}" -f (($driverDeliveries.deliveries | Measure-Object).Count)) -ForegroundColor Gray
+
+$driverPetty = Invoke-Json -Method 'GET' -Path '/api/petty-cash' -Headers $driverHeaders
+Write-Host ("Petty cash entries visible to driver: {0}" -f (($driverPetty.entries | Measure-Object).Count)) -ForegroundColor Gray
+
+Write-Host "CRUD flow: create test delivery -> driver marks DELIVERED -> verify tracking -> delete" -ForegroundColor Cyan
+$qcInvoice = "QC-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+$created = Invoke-Json -Method 'POST' -Path '/api/deliveries' -Headers $adminHeaders -Body @{
+  invoiceNumber = $qcInvoice
+  customerName = 'QC Test Customer'
+  customerPhone = ''
+  address = 'QC Test Address'
+  driverId = $driverUser.id
+}
+
+$deliveryId = $created.delivery.id
+if (-not $deliveryId) { throw "Create delivery did not return delivery.id" }
+Write-Host ("Created delivery id: {0}" -f $deliveryId) -ForegroundColor Gray
+
+# Driver should see it
+$driverAfterCreate = Invoke-Json -Method 'GET' -Path '/api/deliveries' -Headers $driverHeaders
+$found = $false
+foreach ($d in ($driverAfterCreate.deliveries | ForEach-Object { $_ })) {
+  if ($d.id -eq $deliveryId) { $found = $true; break }
+}
+if (-not $found) { throw "Driver cannot see newly assigned delivery" }
+
+# Driver marks delivered
+$updated = Invoke-Json -Method 'PUT' -Path "/api/deliveries/$deliveryId/status" -Headers $driverHeaders -Body @{
+  status = 'DELIVERED'
+  latitude = 0
+  longitude = 0
+  accuracy = 10
+  notes = 'QC delivered'
+}
+if ($updated.delivery.status -ne 'DELIVERED') { throw "Delivery status update failed" }
+
+# Admin verifies tracking history
+$tracking = Invoke-Json -Method 'GET' -Path "/api/tracking/delivery/$deliveryId" -Headers $adminHeaders
+$trackCount = ($tracking.tracking | Measure-Object).Count
+Write-Host ("Tracking records for delivery: {0}" -f $trackCount) -ForegroundColor Gray
+if ($trackCount -lt 1) { throw "Expected at least 1 tracking record" }
+
+# Cleanup
+Invoke-Json -Method 'DELETE' -Path "/api/deliveries/$deliveryId" -Headers $adminHeaders | Out-Null
+Write-Host "Cleanup: test delivery deleted" -ForegroundColor Gray
+
+Write-Host "\nAUTH QC RESULT: PASS" -ForegroundColor Green

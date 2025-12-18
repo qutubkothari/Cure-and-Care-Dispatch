@@ -4,7 +4,7 @@ instance_class: F2
 
 env_variables:
   NODE_ENV: "production"
-  DATABASE_URL: "postgresql://dispatch_user:yXDnjmPGCoew2W3RtBib@localhost/dispatch?host=/cloudsql/care-and-cure-dispatch:us-central1:dispatch-db"
+  DATABASE_URL: "postgresql://dispatch_user:yXDnjmPGCoew2W3RtBib@/dispatch?host=/cloudsql/care-and-cure-dispatch:us-central1:dispatch-db"
   JWT_SECRET: "x1RgkTWDmCqrGLYob7QhZ48w6cjKOXBe"
   JWT_EXPIRES_IN: "7d"
   TWILIO_ACCOUNT_SID: "your-twilio-account-sid"

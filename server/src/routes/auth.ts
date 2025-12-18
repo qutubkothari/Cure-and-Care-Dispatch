@@ -37,6 +37,12 @@ router.post('/register', async (req, res) => {
       user: userWithoutPassword
     });
   } catch (error: any) {
+    console.error('Registration failed:', {
+      email: req.body?.email,
+      code: error?.code,
+      message: error?.message,
+      stack: error?.stack
+    });
     if (error.code === 'P2002') {
       return res.status(409).json({ error: 'Email already exists' });
     }
@@ -100,6 +106,11 @@ router.post('/login', async (req, res) => {
       user: userWithoutPassword
     });
   } catch (error) {
+    console.error('Login failed:', {
+      email: req.body?.email,
+      message: (error as any)?.message,
+      stack: (error as any)?.stack
+    });
     res.status(500).json({ error: 'Login failed' });
   }
 });

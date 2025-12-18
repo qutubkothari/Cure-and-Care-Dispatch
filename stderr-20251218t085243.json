@@ -1,0 +1,97 @@
+﻿[
+  {
+    "insertId": "6943744d000df4aab0ae6dd2",
+    "labels": {
+      "clone_id": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T03:26:05.919716747Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t085243",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice",
+    "timestamp": "2025-12-18T03:26:05.914602Z"
+  },
+  {
+    "insertId": "6943744d000df4a98fff6d7b",
+    "labels": {
+      "clone_id": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T03:26:05.919716747Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t085243",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice To update run: npm install -g npm@11.7.0",
+    "timestamp": "2025-12-18T03:26:05.914601Z"
+  },
+  {
+    "insertId": "6943744d000df4a77696830b",
+    "labels": {
+      "clone_id": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T03:26:05.919716747Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t085243",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0",
+    "timestamp": "2025-12-18T03:26:05.914599Z"
+  },
+  {
+    "insertId": "6943744d000df4a48874cdd3",
+    "labels": {
+      "clone_id": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T03:26:05.919716747Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t085243",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice New major version of npm available! 10.8.2 -> 11.7.0",
+    "timestamp": "2025-12-18T03:26:05.914596Z"
+  },
+  {
+    "insertId": "6943744d000df497b0eb3f77",
+    "labels": {
+      "clone_id": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/stderr",
+    "receiveTimestamp": "2025-12-18T03:26:05.919716747Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t085243",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "textPayload": "npm notice",
+    "timestamp": "2025-12-18T03:26:05.914583Z"
+  }
+]

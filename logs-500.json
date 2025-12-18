@@ -1,0 +1,114 @@
+﻿Reading last 20 HTTP 500 request logs...
+[
+  {
+    "httpRequest": {
+      "status": 500
+    },
+    "insertId": "69437456000f0652f8efdc46",
+    "labels": {
+      "clone_id": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/appengine.googleapis.com%2Frequest_log",
+    "operation": {
+      "first": true,
+      "id": "6943745600ff09a39c0a0f772f0001737e636172652d616e642d637572652d64697370617463680001323032353132313874303835323433000100",
+      "last": true,
+      "producer": "appengine.googleapis.com/request_id"
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.appengine.logging.v1.RequestLog",
+      "appEngineRelease": "1.9.71",
+      "appId": "s~care-and-cure-dispatch",
+      "endTime": "2025-12-18T03:26:14.984556Z",
+      "finished": true,
+      "first": true,
+      "host": "care-and-cure-dispatch.uc.r.appspot.com",
+      "httpVersion": "HTTP/1.1",
+      "instanceId": "0007e26d684817b825173364ad6fdeebf6877a445da4dd660ff4629c739c85c3108dddecedca4eec75d99255083eb0b1350eced5fe2e1cb75f74c2e14272dea7402e586297a73be542e5b7af54",
+      "instanceIndex": -1,
+      "ip": "2401:4900:8fc9:dcbb:d3:bbe0:72e0:3b03",
+      "latency": "0.122908s",
+      "megaCycles": "243",
+      "method": "POST",
+      "requestId": "6943745600ff09a39c0a0f772f0001737e636172652d616e642d637572652d64697370617463680001323032353132313874303835323433000100",
+      "resource": "/api/auth/login",
+      "responseSize": "264",
+      "spanId": "6ce9c7ffb11d7e9c",
+      "startTime": "2025-12-18T03:26:14.861648Z",
+      "status": 500,
+      "traceId": "e3c576502a8c022ad0c4543a1919ade3",
+      "urlMapEntry": "auto",
+      "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7462",
+      "versionId": "20251218t085243"
+    },
+    "receiveTimestamp": "2025-12-18T03:26:15.261426909Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t085243",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "spanId": "6ce9c7ffb11d7e9c",
+    "timestamp": "2025-12-18T03:26:14.861648Z",
+    "trace": "projects/care-and-cure-dispatch/traces/e3c576502a8c022ad0c4543a1919ade3"
+  },
+  {
+    "httpRequest": {
+      "status": 500
+    },
+    "insertId": "694373dd0001206fab103a37",
+    "labels": {
+      "clone_id": "0007e26d68c1fa1ba46f24f6d15389d8d654c98b468c4f971bdc5f360460c426df6da749da2b1d0f3f0666ff469d24eb1d452d5769a491f6e6429092d0fca8e916172296a7b01961e150c22deb91"
+    },
+    "logName": "projects/care-and-cure-dispatch/logs/appengine.googleapis.com%2Frequest_log",
+    "operation": {
+      "first": true,
+      "id": "694373dc00ff08a53e0d92a6960001737e636172652d616e642d637572652d64697370617463680001323032353132313874303834303337000100",
+      "last": true,
+      "producer": "appengine.googleapis.com/request_id"
+    },
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.appengine.logging.v1.RequestLog",
+      "appEngineRelease": "1.9.71",
+      "appId": "s~care-and-cure-dispatch",
+      "endTime": "2025-12-18T03:24:13.073762Z",
+      "finished": true,
+      "first": true,
+      "host": "care-and-cure-dispatch.uc.r.appspot.com",
+      "httpVersion": "HTTP/1.1",
+      "instanceId": "0007e26d68c1fa1ba46f24f6d15389d8d654c98b468c4f971bdc5f360460c426df6da749da2b1d0f3f0666ff469d24eb1d452d5769a491f6e6429092d0fca8e916172296a7b01961e150c22deb91",
+      "instanceIndex": -1,
+      "ip": "2401:4900:8fc9:dcbb:d3:bbe0:72e0:3b03",
+      "latency": "0.237662s",
+      "megaCycles": "228",
+      "method": "POST",
+      "requestId": "694373dc00ff08a53e0d92a6960001737e636172652d616e642d637572652d64697370617463680001323032353132313874303834303337000100",
+      "resource": "/api/auth/login",
+      "responseSize": "264",
+      "spanId": "bcebb3e34593e2f5",
+      "startTime": "2025-12-18T03:24:12.836100Z",
+      "status": 500,
+      "traceId": "7e07717789c00b9c60f12f02d6f7c51c",
+      "urlMapEntry": "auto",
+      "userAgent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; en-IN) WindowsPowerShell/5.1.26100.7462",
+      "versionId": "20251218t084037"
+    },
+    "receiveTimestamp": "2025-12-18T03:24:13.402689095Z",
+    "resource": {
+      "labels": {
+        "module_id": "default",
+        "project_id": "care-and-cure-dispatch",
+        "version_id": "20251218t084037",
+        "zone": "us17"
+      },
+      "type": "gae_app"
+    },
+    "spanId": "bcebb3e34593e2f5",
+    "timestamp": "2025-12-18T03:24:12.836100Z",
+    "trace": "projects/care-and-cure-dispatch/traces/7e07717789c00b9c60f12f02d6f7c51c"
+  }
+]
+
