@@ -16,9 +16,23 @@ env_variables:
   CORS_ORIGIN: "*"
 
 handlers:
-  # Serve static files from client/dist with cache control
-  - url: /assets
-    static_dir: client/dist/assets
+  # Dynamic routes (API + health + websocket)
+  - url: /api/.*
+    script: auto
+    secure: always
+
+  - url: /socket.io/.*
+    script: auto
+    secure: always
+
+  - url: /health
+    script: auto
+    secure: always
+
+  # Static assets built by Vite
+  - url: /assets/(.*)
+    static_files: client/dist/assets/\1
+    upload: client/dist/assets/(.*)
     secure: always
     expiration: "0s"
     http_headers:
@@ -26,9 +40,16 @@ handlers:
       Pragma: "no-cache"
       Expires: "0"
 
+  # SPA fallback: serve index.html for all other routes
   - url: /.*
-    script: auto
+    static_files: client/dist/index.html
+    upload: client/dist/index.html
     secure: always
+    expiration: "0s"
+    http_headers:
+      Cache-Control: "no-cache, no-store, must-revalidate"
+      Pragma: "no-cache"
+      Expires: "0"
 
 automatic_scaling:
   min_instances: 0
