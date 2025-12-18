@@ -1,14 +1,31 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'DRIVER', 'MANAGER');
+DO $$ BEGIN
+    CREATE TYPE "Role" AS ENUM ('ADMIN', 'DRIVER', 'MANAGER');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "DeliveryStatus" AS ENUM ('PENDING', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'CANCELLED');
+DO $$ BEGIN
+    ALTER TYPE "DeliveryStatus" ADD VALUE IF NOT EXISTS 'FAILED';
+EXCEPTION
+    WHEN undefined_object THEN
+      CREATE TYPE "DeliveryStatus" AS ENUM ('PENDING', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'CANCELLED');
+END $$;
 
 -- CreateEnum
-CREATE TYPE "CashCategory" AS ENUM ('PETROL', 'TOLL', 'PARKING', 'MAINTENANCE', 'OTHER');
+DO $$ BEGIN
+    CREATE TYPE "CashCategory" AS ENUM ('PETROL', 'TOLL', 'PARKING', 'MAINTENANCE', 'OTHER');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+DO $$ BEGIN
+    CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
 CREATE TABLE "users" (
