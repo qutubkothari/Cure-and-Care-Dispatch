@@ -5,6 +5,11 @@ import { AuthRequest } from '../middleware/auth';
 const router = Router();
 const prisma = new PrismaClient();
 
+function sendJsonBigIntSafe(res: any, data: any) {
+  const body = JSON.stringify(data, (_key, value) => (typeof value === 'bigint' ? value.toString() : value));
+  return res.type('application/json').send(body);
+}
+
 // Generate report data
 router.get('/data', async (req: AuthRequest, res) => {
   try {
@@ -184,7 +189,7 @@ router.get('/data', async (req: AuthRequest, res) => {
       reportData = { summary, byCategory, requests };
     }
 
-    res.json(reportData);
+    return sendJsonBigIntSafe(res, reportData);
   } catch (error) {
     console.error('Failed to generate report:', error);
     res.status(500).json({ error: 'Failed to generate report' });

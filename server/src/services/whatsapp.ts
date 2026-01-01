@@ -35,6 +35,12 @@ export async function sendWhatsAppNotification({
   type = 'GENERAL'
 }: WhatsAppMessage) {
   try {
+    const rawRecipient = typeof to === 'string' ? to.trim() : '';
+    if (!rawRecipient) {
+      console.warn('[WhatsApp] Missing recipient, skipping notification logging');
+      return { success: false, reason: 'Missing recipient' };
+    }
+
     const client = getTwilioClient();
     
     // If Twilio is not configured, log and skip
@@ -45,7 +51,7 @@ export async function sendWhatsAppNotification({
       await prisma.notification.create({
         data: {
           type,
-          recipient: to,
+          recipient: rawRecipient,
           message,
           status: 'SKIPPED',
           deliveryId
@@ -56,7 +62,7 @@ export async function sendWhatsAppNotification({
     }
     
     // Format phone number (ensure it has country code)
-    const formattedPhone = to.startsWith('+') ? to : `+91${to}`;
+    const formattedPhone = rawRecipient.startsWith('+') ? rawRecipient : `+91${rawRecipient}`;
 
     // Log notification attempt
     const notification = await prisma.notification.create({
@@ -92,16 +98,20 @@ export async function sendWhatsAppNotification({
 
     // Log error
     if (deliveryId) {
-      await prisma.notification.updateMany({
-        where: {
-          deliveryId,
-          status: 'pending'
-        },
-        data: {
-          status: 'failed',
-          error: error.message
-        }
-      });
+      try {
+        await prisma.notification.updateMany({
+          where: {
+            deliveryId,
+            status: 'pending'
+          },
+          data: {
+            status: 'failed',
+            error: error.message
+          }
+        });
+      } catch (logError: any) {
+        console.error('WhatsApp error logging failed:', logError?.message || logError);
+      }
     }
 
     return { success: false, error: error.message };

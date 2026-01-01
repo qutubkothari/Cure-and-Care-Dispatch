@@ -12,6 +12,15 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+function isCloudinaryConfigured() {
+  const name = process.env.CLOUDINARY_CLOUD_NAME;
+  const key = process.env.CLOUDINARY_API_KEY;
+  const secret = process.env.CLOUDINARY_API_SECRET;
+  if (!name || !key || !secret) return false;
+  if (name.startsWith('your-') || key.startsWith('your-') || secret.startsWith('your-')) return false;
+  return true;
+}
+
 // Configure multer for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -30,6 +39,12 @@ const upload = multer({
 // Upload image (delivery proof or receipt)
 router.post('/image', upload.single('image'), async (req: AuthRequest, res) => {
   try {
+    if (!isCloudinaryConfigured()) {
+      return res.status(503).json({
+        error: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.'
+      });
+    }
+
     if (!req.file) {
       return res.status(400).json({ error: 'No image file provided' });
     }
@@ -72,6 +87,12 @@ router.post('/image', upload.single('image'), async (req: AuthRequest, res) => {
 // Upload multiple images
 router.post('/images', upload.array('images', 5), async (req: AuthRequest, res) => {
   try {
+    if (!isCloudinaryConfigured()) {
+      return res.status(503).json({
+        error: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.'
+      });
+    }
+
     if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       return res.status(400).json({ error: 'No image files provided' });
     }
@@ -122,6 +143,12 @@ router.post('/images', upload.array('images', 5), async (req: AuthRequest, res) 
 // Delete image
 router.delete('/image/:publicId', async (req: AuthRequest, res) => {
   try {
+    if (!isCloudinaryConfigured()) {
+      return res.status(503).json({
+        error: 'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.'
+      });
+    }
+
     const { publicId } = req.params;
 
     // Decode public ID (may contain slashes)

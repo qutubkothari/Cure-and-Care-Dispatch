@@ -5,6 +5,19 @@ exports.logAudit = logAudit;
 exports.logChange = logChange;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
+function jsonStringifySafe(value) {
+    try {
+        return JSON.stringify(value, (_key, v) => (typeof v === 'bigint' ? v.toString() : v));
+    }
+    catch {
+        try {
+            return String(value);
+        }
+        catch {
+            return '[Unserializable]';
+        }
+    }
+}
 /**
  * Middleware to automatically log API requests for auditing
  */
@@ -56,10 +69,10 @@ async function logAudit(data) {
                 userId: data.userId,
                 userName: data.userName,
                 userRole: data.userRole,
-                changes: data.changes ? JSON.stringify(data.changes) : null,
+                changes: data.changes ? jsonStringifySafe(data.changes) : null,
                 ipAddress: data.ipAddress,
                 userAgent: data.userAgent,
-                metadata: data.metadata ? JSON.stringify(data.metadata) : null
+                metadata: data.metadata ? jsonStringifySafe(data.metadata) : null
             }
         });
     }
@@ -93,7 +106,7 @@ function compareObjects(before, after) {
         return changes;
     const allKeys = new Set([...Object.keys(before), ...Object.keys(after)]);
     for (const key of allKeys) {
-        if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+        if (jsonStringifySafe(before[key]) !== jsonStringifySafe(after[key])) {
             changes[key] = {
                 before: before[key],
                 after: after[key]

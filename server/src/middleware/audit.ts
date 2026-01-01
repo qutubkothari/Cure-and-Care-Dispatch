@@ -4,6 +4,18 @@ import { AuthRequest } from './auth';
 
 const prisma = new PrismaClient();
 
+function jsonStringifySafe(value: any): string {
+  try {
+    return JSON.stringify(value, (_key, v) => (typeof v === 'bigint' ? v.toString() : v));
+  } catch {
+    try {
+      return String(value);
+    } catch {
+      return '[Unserializable]';
+    }
+  }
+}
+
 export interface AuditLogData {
   action: string;
   entity: string;
@@ -79,10 +91,10 @@ export async function logAudit(data: {
         userId: data.userId,
         userName: data.userName,
         userRole: data.userRole,
-        changes: data.changes ? JSON.stringify(data.changes) : null,
+        changes: data.changes ? jsonStringifySafe(data.changes) : null,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
-        metadata: data.metadata ? JSON.stringify(data.metadata) : null
+        metadata: data.metadata ? jsonStringifySafe(data.metadata) : null
       }
     });
   } catch (error) {
@@ -128,7 +140,7 @@ function compareObjects(before: any, after: any): Record<string, { before: any; 
   const allKeys = new Set([...Object.keys(before), ...Object.keys(after)]);
   
   for (const key of allKeys) {
-    if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+    if (jsonStringifySafe(before[key]) !== jsonStringifySafe(after[key])) {
       changes[key] = {
         before: before[key],
         after: after[key]

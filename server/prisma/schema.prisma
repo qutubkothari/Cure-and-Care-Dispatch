@@ -33,6 +33,10 @@ model Delivery {
   customerPhone String?
   address       String
   status        DeliveryStatus @default(PENDING)
+
+  items         String         @default("")
+  amount        Float          @default(0)
+  priority      String         @default("NORMAL")
   
   latitude      Float?
   longitude     Float?
@@ -48,6 +52,7 @@ model Delivery {
   
   deliveredAt   DateTime?
   proofImage    String?
+  proofUrls     String?
   signature     String?
   customerNotes String?
   

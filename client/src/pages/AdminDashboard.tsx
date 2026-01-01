@@ -66,6 +66,19 @@ interface Driver {
   isActive: boolean;
 }
 
+interface LiveDriverLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  altitude?: number;
+  speed?: number;
+  heading?: number;
+  gpsTimestamp?: string | number;
+  isMockLocation?: boolean;
+  qualityScore?: number;
+  timestamp: string;
+}
+
 interface PettyCash {
   id: string;
   amount: number;
@@ -86,10 +99,21 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [trackingEnabled, setTrackingEnabled] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
+  const [liveLocations, setLiveLocations] = useState<Record<string, LiveDriverLocation | null>>({});
   const [showNewDeliveryModal, setShowNewDeliveryModal] = useState(false);
   const [selectedDeliveryForProof, setSelectedDeliveryForProof] = useState<Delivery | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [editingDelivery, setEditingDelivery] = useState(false);
+  const [editDeliveryForm, setEditDeliveryForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    address: '',
+    items: '',
+    amount: '',
+    priority: 'NORMAL',
+    driverId: ''
+  });
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [pettyCash, setPettyCash] = useState<PettyCash[]>([]);
@@ -120,6 +144,61 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadData();
   }, [activeTab, filters]);
+
+  useEffect(() => {
+    if (activeTab !== 'tracking' || !trackingEnabled) return;
+
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const response = await api.getLiveLocations();
+        const rows = (response.data?.drivers ?? []) as Array<{ driver: { id: string }; location: any }>;
+        const next: Record<string, LiveDriverLocation | null> = {};
+        for (const row of rows) {
+          const driverId = row.driver?.id;
+          if (!driverId) continue;
+          const loc = row.location;
+          if (!loc) {
+            next[driverId] = null;
+            continue;
+          }
+          next[driverId] = {
+            latitude: Number(loc.latitude),
+            longitude: Number(loc.longitude),
+            accuracy: loc.accuracy ?? undefined,
+            altitude: loc.altitude ?? undefined,
+            speed: loc.speed ?? undefined,
+            heading: loc.heading ?? undefined,
+            gpsTimestamp: loc.gpsTimestamp ?? undefined,
+            isMockLocation: loc.isMockLocation ?? undefined,
+            qualityScore: loc.qualityScore ?? undefined,
+            timestamp: typeof loc.timestamp === 'string' ? loc.timestamp : new Date(loc.timestamp).toISOString()
+          };
+        }
+        if (!cancelled) setLiveLocations(next);
+      } catch (error) {
+        console.error('Failed to fetch live locations:', error);
+      }
+    };
+
+    refresh();
+    const id = window.setInterval(refresh, 10_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [activeTab, trackingEnabled]);
+
+  const startTrackingDriver = (driverId?: string) => {
+    if (!driverId) {
+      alert('No driver assigned for this delivery');
+      return;
+    }
+    setActiveTab('tracking');
+    setTrackingEnabled(true);
+    setSelectedDriver(driverId);
+  };
 
   const loadDriversFromUsers = async () => {
     const response = await api.getUsers();
@@ -216,6 +295,75 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Failed to create delivery:', error);
       alert('Failed to create delivery. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDeliveryEditor = (delivery: Delivery) => {
+    setEditDeliveryForm({
+      customerName: delivery.customerName || '',
+      customerPhone: delivery.customerPhone || '',
+      address: delivery.address || '',
+      items: (delivery as any).items || '',
+      amount: String((delivery as any).amount ?? ''),
+      priority: (delivery as any).priority || 'NORMAL',
+      driverId: delivery.driverId || ''
+    });
+    setEditingDelivery(true);
+  };
+
+  const handleSaveDeliveryEdits = async () => {
+    if (!selectedDeliveryForProof) return;
+
+    try {
+      setLoading(true);
+      const payload: any = {
+        customerName: editDeliveryForm.customerName,
+        customerPhone: editDeliveryForm.customerPhone || null,
+        address: editDeliveryForm.address,
+        items: editDeliveryForm.items,
+        amount: editDeliveryForm.amount === '' ? 0 : parseFloat(editDeliveryForm.amount),
+        priority: editDeliveryForm.priority
+      };
+
+      const updatedResp = await api.updateDelivery(selectedDeliveryForProof.id, payload);
+      const updated = updatedResp.data?.delivery;
+      if (updated) {
+        setSelectedDeliveryForProof(updated);
+      }
+
+      // Assign driver if changed
+      if ((editDeliveryForm.driverId || null) !== (selectedDeliveryForProof.driverId || null)) {
+        await api.assignDelivery(selectedDeliveryForProof.id, editDeliveryForm.driverId);
+      }
+
+      await loadData();
+      setEditingDelivery(false);
+      alert('✓ Delivery updated');
+    } catch (error: any) {
+      console.error('Failed to update delivery:', error);
+      alert(error?.response?.data?.error || 'Failed to update delivery');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteDelivery = async () => {
+    if (!selectedDeliveryForProof) return;
+    const confirmDelete = window.confirm(`Delete ${selectedDeliveryForProof.invoiceNumber}? This cannot be undone.`);
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      await api.deleteDelivery(selectedDeliveryForProof.id);
+      setSelectedDeliveryForProof(null);
+      setEditingDelivery(false);
+      await loadData();
+      alert('✓ Delivery deleted');
+    } catch (error: any) {
+      console.error('Failed to delete delivery:', error);
+      alert(error?.response?.data?.error || 'Failed to delete delivery');
     } finally {
       setLoading(false);
     }
@@ -577,7 +725,10 @@ export default function AdminDashboard() {
                           <Eye className="w-4 h-4" />
                           View
                         </button>
-                        <button className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
+                        <button
+                          onClick={() => startTrackingDriver(delivery.driverId)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                        >
                           <Navigation className="w-4 h-4" />
                           Track
                         </button>
@@ -651,7 +802,10 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-medium text-sm">
+                    <button
+                      onClick={() => startTrackingDriver(driver.id)}
+                      className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-medium text-sm"
+                    >
                       View Details
                     </button>
                   </div>
@@ -883,13 +1037,32 @@ export default function AdminDashboard() {
 
                     {/* Driver Markers */}
                     {drivers.filter(d => d.isActive).map((driver, idx) => {
+                      const loc = liveLocations[driver.id] ?? null;
+                      const liveDrivers = drivers.filter((d) => d.isActive);
+                      const coords = liveDrivers
+                        .map((d) => liveLocations[d.id])
+                        .filter((l): l is LiveDriverLocation => Boolean(l && Number.isFinite(l.latitude) && Number.isFinite(l.longitude)));
+                      const latMin = coords.length ? Math.min(...coords.map((c) => c.latitude)) : 0;
+                      const latMax = coords.length ? Math.max(...coords.map((c) => c.latitude)) : 0;
+                      const lngMin = coords.length ? Math.min(...coords.map((c) => c.longitude)) : 0;
+                      const lngMax = coords.length ? Math.max(...coords.map((c) => c.longitude)) : 0;
+
                       const positions = [
                         { top: '15%', left: '20%' },
                         { top: '45%', left: '60%' },
                         { top: '70%', left: '35%' },
                         { top: '30%', left: '75%' }
                       ];
-                      const pos = positions[idx % positions.length];
+
+                      let pos = positions[idx % positions.length];
+                      if (loc && coords.length && latMax !== latMin && lngMax !== lngMin) {
+                        const topPct = 10 + ((latMax - loc.latitude) / (latMax - latMin)) * 70; // invert so higher lat is higher
+                        const leftPct = 10 + ((loc.longitude - lngMin) / (lngMax - lngMin)) * 80;
+                        pos = {
+                          top: `${Math.max(10, Math.min(80, topPct))}%`,
+                          left: `${Math.max(10, Math.min(90, leftPct))}%`
+                        };
+                      }
                       const isSelected = selectedDriver === driver.id;
 
                       return (
@@ -920,7 +1093,9 @@ export default function AdminDashboard() {
                             <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl p-3 whitespace-nowrap animate-fade-in z-30">
                               <div className="text-xs font-semibold text-gray-900">{driver.name}</div>
                               <div className="text-xs text-gray-600">{driver.email}</div>
-                              <div className="text-xs text-primary-600 mt-1">📍 Active Delivery</div>
+                              <div className="text-xs text-primary-600 mt-1">
+                                {loc ? `📍 ${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}` : '📍 No recent location'}
+                              </div>
                               <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-white rotate-45"></div>
                             </div>
                           )}
@@ -1025,7 +1200,20 @@ export default function AdminDashboard() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Last Update</span>
-                      <span className="font-medium text-gray-900">2 min ago</span>
+                      <span className="font-medium text-gray-900">
+                        {(() => {
+                          const loc = liveLocations[driver.id];
+                          if (!loc?.timestamp) return '—';
+                          const deltaMs = Date.now() - new Date(loc.timestamp).getTime();
+                          if (!Number.isFinite(deltaMs) || deltaMs < 0) return '—';
+                          const mins = Math.floor(deltaMs / 60000);
+                          if (mins < 1) return 'Just now';
+                          if (mins === 1) return '1 min ago';
+                          if (mins < 60) return `${mins} min ago`;
+                          const hrs = Math.floor(mins / 60);
+                          return hrs === 1 ? '1 hr ago' : `${hrs} hrs ago`;
+                        })()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1387,12 +1575,50 @@ export default function AdminDashboard() {
                 <h2 className="text-xl font-bold">Delivery Details</h2>
                 <p className="text-sm text-gray-600">{selectedDeliveryForProof.invoiceNumber}</p>
               </div>
-              <button
-                onClick={() => setSelectedDeliveryForProof(null)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <div className="flex items-center gap-2">
+                {!editingDelivery ? (
+                  <button
+                    onClick={() => openDeliveryEditor(selectedDeliveryForProof)}
+                    className="px-3 py-1.5 text-sm bg-white text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 font-medium"
+                    disabled={loading}
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setEditingDelivery(false)}
+                      className="px-3 py-1.5 text-sm bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                      disabled={loading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveDeliveryEdits}
+                      className="px-3 py-1.5 text-sm bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-lg hover:from-primary-700 hover:to-accent-700 font-medium"
+                      disabled={loading}
+                    >
+                      {loading ? 'Saving...' : 'Save'}
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={handleDeleteDelivery}
+                  className="px-3 py-1.5 text-sm bg-white text-red-600 border border-red-300 rounded-lg hover:bg-red-50 font-medium"
+                  disabled={loading}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedDeliveryForProof(null);
+                    setEditingDelivery(false);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
             
             <div className="p-6 space-y-6">
@@ -1400,18 +1626,71 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Customer</p>
-                  <p className="font-semibold">{selectedDeliveryForProof.customerName}</p>
-                  <p className="text-sm text-gray-600">{selectedDeliveryForProof.customerPhone}</p>
+                  {editingDelivery ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editDeliveryForm.customerName}
+                        onChange={(e) => setEditDeliveryForm({ ...editDeliveryForm, customerName: e.target.value })}
+                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                      <input
+                        type="text"
+                        value={editDeliveryForm.customerPhone}
+                        onChange={(e) => setEditDeliveryForm({ ...editDeliveryForm, customerPhone: e.target.value })}
+                        className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Phone (optional)"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold">{selectedDeliveryForProof.customerName}</p>
+                      <p className="text-sm text-gray-600">{selectedDeliveryForProof.customerPhone}</p>
+                    </>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Amount</p>
-                  <p className="text-2xl font-bold text-accent-600">
-                    ₹{selectedDeliveryForProof.amount.toLocaleString()}
-                  </p>
+                  {editingDelivery ? (
+                    <input
+                      type="number"
+                      value={editDeliveryForm.amount}
+                      onChange={(e) => setEditDeliveryForm({ ...editDeliveryForm, amount: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    <p className="text-2xl font-bold text-accent-600">
+                      ₹{Number((selectedDeliveryForProof as any).amount || 0).toLocaleString()}
+                    </p>
+                  )}
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-gray-600">Address</p>
-                  <p className="font-medium">{selectedDeliveryForProof.address}</p>
+                  {editingDelivery ? (
+                    <textarea
+                      value={editDeliveryForm.address}
+                      onChange={(e) => setEditDeliveryForm({ ...editDeliveryForm, address: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                      rows={2}
+                    />
+                  ) : (
+                    <p className="font-medium">{selectedDeliveryForProof.address}</p>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">Items</p>
+                  {editingDelivery ? (
+                    <input
+                      type="text"
+                      value={editDeliveryForm.items}
+                      onChange={(e) => setEditDeliveryForm({ ...editDeliveryForm, items: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  ) : (
+                    <p className="font-medium">{(selectedDeliveryForProof as any).items || '—'}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
@@ -1427,7 +1706,22 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Driver</p>
-                  <p className="font-medium">{selectedDeliveryForProof.driver?.name || 'Unassigned'}</p>
+                  {editingDelivery ? (
+                    <select
+                      value={editDeliveryForm.driverId}
+                      onChange={(e) => setEditDeliveryForm({ ...editDeliveryForm, driverId: e.target.value })}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="">Unassigned</option>
+                      {drivers.map((driver) => (
+                        <option key={driver.id} value={driver.id}>
+                          {driver.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="font-medium">{selectedDeliveryForProof.driver?.name || 'Unassigned'}</p>
+                  )}
                 </div>
               </div>
 

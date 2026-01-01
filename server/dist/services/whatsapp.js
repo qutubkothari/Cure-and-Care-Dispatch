@@ -24,6 +24,11 @@ function getTwilioClient() {
 }
 async function sendWhatsAppNotification({ to, message, deliveryId, type = 'GENERAL' }) {
     try {
+        const rawRecipient = typeof to === 'string' ? to.trim() : '';
+        if (!rawRecipient) {
+            console.warn('[WhatsApp] Missing recipient, skipping notification logging');
+            return { success: false, reason: 'Missing recipient' };
+        }
         const client = getTwilioClient();
         // If Twilio is not configured, log and skip
         if (!client) {
@@ -32,7 +37,7 @@ async function sendWhatsAppNotification({ to, message, deliveryId, type = 'GENER
             await prisma.notification.create({
                 data: {
                     type,
-                    recipient: to,
+                    recipient: rawRecipient,
                     message,
                     status: 'SKIPPED',
                     deliveryId
@@ -41,7 +46,7 @@ async function sendWhatsAppNotification({ to, message, deliveryId, type = 'GENER
             return { success: false, reason: 'Twilio not configured' };
         }
         // Format phone number (ensure it has country code)
-        const formattedPhone = to.startsWith('+') ? to : `+91${to}`;
+        const formattedPhone = rawRecipient.startsWith('+') ? rawRecipient : `+91${rawRecipient}`;
         // Log notification attempt
         const notification = await prisma.notification.create({
             data: {
@@ -73,16 +78,21 @@ async function sendWhatsAppNotification({ to, message, deliveryId, type = 'GENER
         console.error('WhatsApp error:', error);
         // Log error
         if (deliveryId) {
-            await prisma.notification.updateMany({
-                where: {
-                    deliveryId,
-                    status: 'pending'
-                },
-                data: {
-                    status: 'failed',
-                    error: error.message
-                }
-            });
+            try {
+                await prisma.notification.updateMany({
+                    where: {
+                        deliveryId,
+                        status: 'pending'
+                    },
+                    data: {
+                        status: 'failed',
+                        error: error.message
+                    }
+                });
+            }
+            catch (logError) {
+                console.error('WhatsApp error logging failed:', logError?.message || logError);
+            }
         }
         return { success: false, error: error.message };
     }

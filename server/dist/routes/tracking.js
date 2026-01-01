@@ -4,6 +4,17 @@ const express_1 = require("express");
 const client_1 = require("@prisma/client");
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
+function bigIntToString(value) {
+    return typeof value === 'bigint' ? value.toString() : value;
+}
+function normalizeLocation(location) {
+    if (!location)
+        return location;
+    return {
+        ...location,
+        gpsTimestamp: bigIntToString(location.gpsTimestamp)
+    };
+}
 // Update driver location (GPS)
 router.post('/location', async (req, res) => {
     try {
@@ -37,12 +48,12 @@ router.post('/location', async (req, res) => {
             altitude,
             speed,
             heading,
-            gpsTimestamp,
+            gpsTimestamp: bigIntToString(gpsTimestamp),
             isMockLocation,
             qualityScore,
             timestamp: location.timestamp
         });
-        res.json({ message: 'Location updated', location });
+        res.json({ message: 'Location updated', location: normalizeLocation(location) });
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to update location' });
@@ -66,7 +77,7 @@ router.get('/location/:driverId', async (req, res) => {
             orderBy: { timestamp: 'desc' },
             take: parseInt(limit)
         });
-        res.json({ locations });
+        res.json({ locations: locations.map(normalizeLocation) });
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to fetch location history' });
@@ -103,7 +114,12 @@ router.get('/locations/live', async (req, res) => {
             };
         });
         const driverLocations = await Promise.all(locationsPromises);
-        res.json({ drivers: driverLocations });
+        res.json({
+            drivers: driverLocations.map((row) => ({
+                driver: row.driver,
+                location: row.location ? normalizeLocation(row.location) : null
+            }))
+        });
     }
     catch (error) {
         res.status(500).json({ error: 'Failed to fetch live locations' });

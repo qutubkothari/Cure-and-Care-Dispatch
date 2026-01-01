@@ -5,6 +5,18 @@ import { AuthRequest } from '../middleware/auth';
 const router = Router();
 const prisma = new PrismaClient();
 
+function bigIntToString(value: any) {
+  return typeof value === 'bigint' ? value.toString() : value;
+}
+
+function normalizeLocation(location: any) {
+  if (!location) return location;
+  return {
+    ...location,
+    gpsTimestamp: bigIntToString(location.gpsTimestamp)
+  };
+}
+
 // Update driver location (GPS)
 router.post('/location', async (req: AuthRequest, res) => {
   try {
@@ -52,13 +64,13 @@ router.post('/location', async (req: AuthRequest, res) => {
       altitude,
       speed,
       heading,
-      gpsTimestamp,
+      gpsTimestamp: bigIntToString(gpsTimestamp),
       isMockLocation,
       qualityScore,
       timestamp: location.timestamp
     });
 
-    res.json({ message: 'Location updated', location });
+    res.json({ message: 'Location updated', location: normalizeLocation(location) });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update location' });
   }
@@ -84,7 +96,7 @@ router.get('/location/:driverId', async (req: AuthRequest, res) => {
       take: parseInt(limit as string)
     });
 
-    res.json({ locations });
+    res.json({ locations: locations.map(normalizeLocation) });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch location history' });
   }
@@ -127,7 +139,12 @@ router.get('/locations/live', async (req: AuthRequest, res) => {
 
     const driverLocations = await Promise.all(locationsPromises);
 
-    res.json({ drivers: driverLocations });
+    res.json({
+      drivers: driverLocations.map((row: any) => ({
+        driver: row.driver,
+        location: row.location ? normalizeLocation(row.location) : null
+      }))
+    });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch live locations' });
   }

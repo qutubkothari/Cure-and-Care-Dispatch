@@ -20,6 +20,26 @@ const users_1 = __importDefault(require("./routes/users"));
 const auth_2 = require("./middleware/auth");
 const errorHandler_1 = require("./middleware/errorHandler");
 (0, dotenv_1.config)();
+try {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (databaseUrl) {
+        const parsed = new URL(databaseUrl);
+        console.log('DB config:', {
+            host: parsed.host,
+            database: parsed.pathname,
+            socketHost: parsed.searchParams.get('host')
+        });
+    }
+    else {
+        console.warn('DB config: DATABASE_URL is not set');
+    }
+}
+catch (error) {
+    console.error('DB config: failed to parse DATABASE_URL', {
+        message: error?.message,
+        stack: error?.stack
+    });
+}
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const io = new socket_io_1.Server(httpServer, {

@@ -62,6 +62,9 @@ export const updateDeliveryStatus = (id: string, data: any) =>
 export const assignDelivery = (id: string, driverId: string) =>
   api.put(`/deliveries/${id}/assign`, { driverId });
 
+export const updateDelivery = (id: string, data: any) =>
+  api.put(`/deliveries/${id}`, data);
+
 export const deleteDelivery = (id: string) =>
   api.delete(`/deliveries/${id}`);
 

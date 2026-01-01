@@ -4,6 +4,10 @@ const express_1 = require("express");
 const client_1 = require("@prisma/client");
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
+function sendJsonBigIntSafe(res, data) {
+    const body = JSON.stringify(data, (_key, value) => (typeof value === 'bigint' ? value.toString() : value));
+    return res.type('application/json').send(body);
+}
 // Generate report data
 router.get('/data', async (req, res) => {
     try {
@@ -163,7 +167,7 @@ router.get('/data', async (req, res) => {
             }));
             reportData = { summary, byCategory, requests };
         }
-        res.json(reportData);
+        return sendJsonBigIntSafe(res, reportData);
     }
     catch (error) {
         console.error('Failed to generate report:', error);

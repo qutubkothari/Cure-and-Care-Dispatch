@@ -7,6 +7,63 @@ import { logAudit, logChange } from '../middleware/audit';
 const router = Router();
 const prisma = new PrismaClient();
 
+function coerceBigInt(value: unknown): bigint | undefined {
+  if (value == null) return undefined;
+  if (typeof value === 'bigint') return value;
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) return undefined;
+    return BigInt(Math.trunc(value));
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    try {
+      return BigInt(trimmed);
+    } catch {
+      const asNumber = Number(trimmed);
+      if (!Number.isFinite(asNumber)) return undefined;
+      return BigInt(Math.trunc(asNumber));
+    }
+  }
+  return undefined;
+}
+
+function safeJsonArray(value: unknown): string[] | undefined {
+  if (value == null) return undefined;
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+      } catch {
+        // fall through
+      }
+    }
+    // best-effort CSV fallback
+    const parts = trimmed.split(',').map((p) => p.trim()).filter(Boolean);
+    return parts.length ? parts : undefined;
+  }
+  return undefined;
+}
+
+function normalizeDeliveryForClient(delivery: any) {
+  const proofUrls = safeJsonArray(delivery.proofUrls) ?? (delivery.proofImage ? [delivery.proofImage] : []);
+  const failurePhotoUrls = safeJsonArray(delivery.failurePhotoUrls) ?? [];
+
+  const gpsTimestamp = typeof delivery.gpsTimestamp === 'bigint' ? delivery.gpsTimestamp.toString() : delivery.gpsTimestamp;
+
+  return {
+    ...delivery,
+    gpsTimestamp,
+    proofUrl: delivery.proofImage ?? null,
+    proofUrls,
+    failurePhotoUrls
+  };
+}
+
 // Get all deliveries (with filters)
 router.get('/', async (req: AuthRequest, res) => {
   try {
@@ -71,8 +128,9 @@ router.get('/', async (req: AuthRequest, res) => {
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json({ deliveries });
+    res.json({ deliveries: deliveries.map(normalizeDeliveryForClient) });
   } catch (error) {
+    console.error('Failed to fetch deliveries:', error);
     res.status(500).json({ error: 'Failed to fetch deliveries' });
   }
 });
@@ -98,8 +156,9 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Delivery not found' });
     }
 
-    res.json({ delivery });
+    res.json({ delivery: normalizeDeliveryForClient(delivery) });
   } catch (error) {
+    console.error('Failed to fetch delivery:', error);
     res.status(500).json({ error: 'Failed to fetch delivery' });
   }
 });
@@ -118,6 +177,9 @@ router.post('/', async (req: AuthRequest, res) => {
       customerName,
       customerPhone,
       address,
+      items,
+      amount,
+      priority,
       latitude,
       longitude,
       customerNotes,
@@ -134,6 +196,9 @@ router.post('/', async (req: AuthRequest, res) => {
         customerName,
         customerPhone,
         address,
+        items: typeof items === 'string' ? items : '',
+        amount: Number.isFinite(Number(amount)) ? Number(amount) : 0,
+        priority: typeof priority === 'string' && priority ? priority : 'NORMAL',
         latitude,
         longitude,
         customerNotes,
@@ -165,12 +230,75 @@ router.post('/', async (req: AuthRequest, res) => {
     io.to(`driver-${driverId}`).emit('new-delivery', delivery);
     io.to('admin').emit('delivery-created', delivery);
 
-    res.status(201).json({ delivery });
+    res.status(201).json({ delivery: normalizeDeliveryForClient(delivery) });
   } catch (error: any) {
     if (error.code === 'P2002') {
       return res.status(409).json({ error: 'Invoice number already exists' });
     }
     res.status(500).json({ error: 'Failed to create delivery' });
+  }
+});
+
+// Update delivery details (admin only)
+router.put('/:id', async (req: AuthRequest, res) => {
+  try {
+    const user = req.user!;
+    if (user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Only admins can update deliveries' });
+    }
+
+    const existing = await prisma.delivery.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Delivery not found' });
+    }
+
+    const {
+      customerName,
+      customerPhone,
+      address,
+      items,
+      amount,
+      priority,
+      customerNotes
+    } = req.body;
+
+    const updated = await prisma.delivery.update({
+      where: { id: req.params.id },
+      data: {
+        ...(typeof customerName === 'string' ? { customerName } : {}),
+        ...(typeof customerPhone === 'string' || customerPhone === null ? { customerPhone } : {}),
+        ...(typeof address === 'string' ? { address } : {}),
+        ...(typeof items === 'string' ? { items } : {}),
+        ...(amount !== undefined ? { amount: Number.isFinite(Number(amount)) ? Number(amount) : existing.amount } : {}),
+        ...(typeof priority === 'string' && priority ? { priority } : {}),
+        ...(typeof customerNotes === 'string' || customerNotes === null ? { customerNotes } : {})
+      },
+      include: {
+        driver: {
+          select: {
+            id: true,
+            name: true,
+            phone: true
+          }
+        }
+      }
+    });
+
+    await logChange('UPDATE', 'DELIVERY', req.params.id, existing, updated, {
+      id: user.id,
+      name: user.email,
+      role: user.role
+    }, req);
+
+    const io = req.app.get('io');
+    io.to('admin').emit('delivery-updated', updated);
+    if (updated.driverId) {
+      io.to(`driver-${updated.driverId}`).emit('delivery-updated', updated);
+    }
+
+    res.json({ delivery: normalizeDeliveryForClient(updated) });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update delivery' });
   }
 });
 
@@ -257,10 +385,10 @@ router.post('/bulk', async (req: AuthRequest, res) => {
 // Update delivery status
 router.put('/:id/status', async (req: AuthRequest, res) => {
   try {
-    const { 
-      status, 
-      latitude, 
-      longitude, 
+    const {
+      status,
+      latitude,
+      longitude,
       accuracy,
       altitude,
       altitudeAccuracy,
@@ -270,9 +398,19 @@ router.put('/:id/status', async (req: AuthRequest, res) => {
       isMockLocation,
       qualityScore,
       gpsWarnings,
-      proofImage, 
-      signature, 
-      notes 
+      proofImage,
+      proofUrl,
+      proofUrls,
+      signature,
+      notes,
+      reason,
+      failureReason,
+      failureNotes,
+      failurePhotoUrls,
+      photoUrls,
+      startLocation,
+      endLocation,
+      failureLocation
     } = req.body;
     const user = req.user!;
 
@@ -299,46 +437,79 @@ router.put('/:id/status', async (req: AuthRequest, res) => {
 
     const updateData: any = { status };
 
+    // Support nested location objects from the client
+    const location =
+      (status === 'IN_TRANSIT' ? startLocation : undefined) ||
+      (status === 'DELIVERED' ? endLocation : undefined) ||
+      (status === 'FAILED' ? failureLocation : undefined) ||
+      undefined;
+
+    const lat = location?.lat ?? latitude;
+    const lng = location?.lng ?? longitude;
+    const locAccuracy = location?.accuracy ?? accuracy;
+    const locAltitude = location?.altitude ?? altitude;
+    const locAltitudeAccuracy = location?.altitudeAccuracy ?? altitudeAccuracy;
+    const locHeading = location?.heading ?? heading;
+    const locSpeed = location?.speed ?? speed;
+    const locGpsTimestamp = location?.gpsTimestamp ?? gpsTimestamp;
+    const locIsMock = location?.isMockLocation ?? isMockLocation;
+    const locQuality = location?.qualityScore ?? qualityScore;
+    const locWarnings = location?.gpsWarnings ?? gpsWarnings;
+
+    const coercedGpsTimestamp = coerceBigInt(locGpsTimestamp);
+
     if (status === 'DELIVERED') {
       updateData.deliveredAt = new Date();
-      updateData.latitude = latitude;
-      updateData.longitude = longitude;
-      updateData.accuracy = accuracy;
-      updateData.altitude = altitude;
-      updateData.altitudeAccuracy = altitudeAccuracy;
-      updateData.heading = heading;
-      updateData.speed = speed;
-      updateData.gpsTimestamp = gpsTimestamp;
-      updateData.isMockLocation = isMockLocation || false;
-      updateData.qualityScore = qualityScore;
-      updateData.gpsWarnings = gpsWarnings;
-      updateData.proofImage = proofImage;
+      updateData.latitude = lat;
+      updateData.longitude = lng;
+      updateData.accuracy = locAccuracy;
+      updateData.altitude = locAltitude;
+      updateData.altitudeAccuracy = locAltitudeAccuracy;
+      updateData.heading = locHeading;
+      updateData.speed = locSpeed;
+      if (coercedGpsTimestamp !== undefined) updateData.gpsTimestamp = coercedGpsTimestamp;
+      updateData.isMockLocation = Boolean(locIsMock);
+      updateData.qualityScore = locQuality;
+      updateData.gpsWarnings = locWarnings;
+      updateData.proofImage = proofImage || proofUrl;
+      const proofUrlsArr = safeJsonArray(proofUrls);
+      if (proofUrlsArr?.length) {
+        updateData.proofUrls = JSON.stringify(proofUrlsArr);
+      }
       updateData.signature = signature;
     } else if (status === 'IN_TRANSIT') {
-      updateData.latitude = latitude;
-      updateData.longitude = longitude;
-      updateData.accuracy = accuracy;
-      updateData.altitude = altitude;
-      updateData.altitudeAccuracy = altitudeAccuracy;
-      updateData.heading = heading;
-      updateData.speed = speed;
-      updateData.gpsTimestamp = gpsTimestamp;
-      updateData.isMockLocation = isMockLocation || false;
-      updateData.qualityScore = qualityScore;
-      updateData.gpsWarnings = gpsWarnings;
+      updateData.latitude = lat;
+      updateData.longitude = lng;
+      updateData.accuracy = locAccuracy;
+      updateData.altitude = locAltitude;
+      updateData.altitudeAccuracy = locAltitudeAccuracy;
+      updateData.heading = locHeading;
+      updateData.speed = locSpeed;
+      if (coercedGpsTimestamp !== undefined) updateData.gpsTimestamp = coercedGpsTimestamp;
+      updateData.isMockLocation = Boolean(locIsMock);
+      updateData.qualityScore = locQuality;
+      updateData.gpsWarnings = locWarnings;
     } else if (status === 'FAILED') {
       updateData.failedAt = new Date();
-      updateData.latitude = latitude;
-      updateData.longitude = longitude;
-      updateData.accuracy = accuracy;
-      updateData.altitude = altitude;
-      updateData.altitudeAccuracy = altitudeAccuracy;
-      updateData.heading = heading;
-      updateData.speed = speed;
-      updateData.gpsTimestamp = gpsTimestamp;
-      updateData.isMockLocation = isMockLocation || false;
-      updateData.qualityScore = qualityScore;
-      updateData.gpsWarnings = gpsWarnings;
+      updateData.latitude = lat;
+      updateData.longitude = lng;
+      updateData.accuracy = locAccuracy;
+      updateData.altitude = locAltitude;
+      updateData.altitudeAccuracy = locAltitudeAccuracy;
+      updateData.heading = locHeading;
+      updateData.speed = locSpeed;
+      if (coercedGpsTimestamp !== undefined) updateData.gpsTimestamp = coercedGpsTimestamp;
+      updateData.isMockLocation = Boolean(locIsMock);
+      updateData.qualityScore = locQuality;
+      updateData.gpsWarnings = locWarnings;
+
+      const failReason = typeof failureReason === 'string' ? failureReason : (typeof reason === 'string' ? reason : undefined);
+      const failNotes = typeof failureNotes === 'string' ? failureNotes : (typeof notes === 'string' ? notes : undefined);
+      const failPhotos = safeJsonArray(failurePhotoUrls) ?? safeJsonArray(photoUrls);
+
+      if (failReason) updateData.failureReason = failReason;
+      if (failNotes) updateData.failureNotes = failNotes;
+      if (failPhotos?.length) updateData.failurePhotoUrls = JSON.stringify(failPhotos);
     }
 
     const updated = await prisma.delivery.update({
@@ -354,13 +525,15 @@ router.put('/:id/status', async (req: AuthRequest, res) => {
       }
     });
 
+    const normalizedUpdated = normalizeDeliveryForClient(updated);
+
     // Log tracking
     await prisma.deliveryTracking.create({
       data: {
         deliveryId: updated.id,
         status,
-        latitude,
-        longitude,
+        latitude: lat,
+        longitude: lng,
         notes
       }
     });
@@ -377,9 +550,9 @@ router.put('/:id/status', async (req: AuthRequest, res) => {
 
     // Emit real-time update
     const io = req.app.get('io');
-    io.to('admin').emit('delivery-updated', updated);
+    io.to('admin').emit('delivery-updated', normalizedUpdated);
     if (updated.driverId) {
-      io.to(`driver-${updated.driverId}`).emit('delivery-updated', updated);
+      io.to(`driver-${updated.driverId}`).emit('delivery-updated', normalizedUpdated);
     }
 
     // Log audit
@@ -389,8 +562,9 @@ router.put('/:id/status', async (req: AuthRequest, res) => {
       role: user.role
     }, req);
 
-    res.json({ delivery: updated });
+    res.json({ delivery: normalizedUpdated });
   } catch (error) {
+    console.error('Failed to update delivery status:', error);
     res.status(500).json({ error: 'Failed to update delivery' });
   }
 });
